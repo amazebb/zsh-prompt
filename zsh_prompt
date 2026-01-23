@@ -1,0 +1,134 @@
+# Function to set up custom ZSH prompt with git status
+typeset -gA ZZ_PROMPT
+ZZ_PROMPT=(
+    ## Prompt
+    [width]='40'            # Prompt width
+    # Colors (K=background, F=foreground)
+    [b]='blue'              # (K) PWD
+    [f]='#eeffee'           # (F) Text
+    [k]='%{\e[48;5;256m%}'  # (K) Reset for macOS Terminal
+    ## PS1 
+    [p1]='\ue0b0'           # Trailing glyph
+    # Home
+    [u]=''                  # user@host ("%n@%m"), or hide ("")
+    [h]='\U000f07d2'        # Home glyph
+    [p]='\uea83'            # Folder glyph
+    # Git
+    [gs]=''                 # Git status line
+    [gc]=''                 # Either ZZ_PROMPT[g~] or ZZ_PROMPT[go] 
+    [gg]='\ue725'           # Branch glyph
+    [g~]='red'              # (K) Working tree changes
+    [go]='#5ca37a'          # (K) Working tree clean
+    ## RPS1
+    [r1]='\ue0b2'           # Leading glyph 
+    # Virtiual Environment
+    [py]='\ue606'           # Python glyph
+    [cv]='magenta'          # (K) Outside project folder
+    # System
+    [t]='*'                 # Date/Time
+    [x]='red'               # (K) Last command error
+ )
+
+setup_prompt() {
+    # Enable command substitution in prompt
+    setopt PROMPT_SUBST
+
+    M(){
+        print -n -- "${ZZ_PROMPT[$1]}"
+    }
+
+    F(){
+        print -r -- "%{%F{$1}%}"
+    }
+
+    K(){
+        print -r -- "%{%K{$1}%}"
+    }
+   
+    R(){
+       # In macOS 15.x and prior, prevent Terminal.app brightening font color with no background:
+       # https://apple.stackexchange.com/questions/282911/
+       # prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
+       # Setting background to an out of range value works, %k and %K{256} do not work.
+       # Not needed for Kitty and terminals that support truecolor
+       [[ -z "$KITTY_WINDOW_ID" ]] && k="%k$(M k)" || k='%k'
+       print -n -- "$k"
+    }
+
+    pwd-icon() {
+        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h) } || p=$(M p)" "$PWD
+        print -n -- "$p"
+    }
+
+    ps1a() {
+        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)<..<$(pwd-icon)"
+    }
+
+    ps1b() {
+        S="$(F "$(M b)")$(M p1)"
+        if [[ -n $(M gs) ]]; then
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg) $(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
+        else
+            print -n -- "$(R)$S %f"
+        fi
+    }
+
+    # Build left prompt
+    ps1() {
+        PS1="$(ps1a)$(ps1b)"
+    }
+
+    # Update Git status before each prompt
+    precmd() {
+        dotfiles stline
+        ZZ_PROMPT[gs]=${_ZD[prompt]}
+        [[ $(M gs) =~ [+~?] ]] && ZZ_PROMPT[gc]=$(M g~) || ZZ_PROMPT[gc]=$(M go)
+    }
+
+    venv_path() {
+        # Calculate relative path from VENV to current directory as "../" notation
+        # Given a base path (Python virtual environment parent), returns
+        # a string of "../" repeated for each directory level between the base and PWD.
+        local relative result
+        depth=0
+
+        [[ "$PWD" != "$1" ]] && relative="${PWD#"$1"/}"
+        [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
+        for ((i = 0; i < depth; i++)); do result+="../"; done
+
+        print -n -- "$result"
+    }
+
+    rps1a(){
+        if [[ -n "$VIRTUAL_ENV" ]]; then
+            venv="${VIRTUAL_ENV%/*}"
+            if [[ "$PWD" == "$venv"/* || "$PWD" == "$venv" ]]; then
+                C="$(M b)"
+                venv=$(venv_path "$venv")
+                venv="$venv${VIRTUAL_ENV##*/}"
+            else
+                C="$(M cv)"
+                venv=${venv/#$PWD/}
+                venv="${venv/#$HOME/~}"
+            fi
+            py_venv="$(F "$C")$(M r1)"
+            py_venv+="%f$(K "$C")$(M py) $venv"
+        fi
+        print -n -- "$(R)$py_venv"
+    }
+   
+    rps1b(){
+        R="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
+        R+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
+        print -n -- "$R"
+    }
+
+    rps1(){
+        RPS1="$(rps1a)$(rps1b)"
+    }
+
+    # Final hook to update prompt
+    precmd_functions=(ps1 rps1)
+}
+
+setup_prompt
