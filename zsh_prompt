@@ -15,8 +15,10 @@ _ZZ_PROMPT=(
     [p]='\uea83'            # Folder glyph
     # Git
     [gs]=''                 # Git status line
-    [gc]=''                 # Either ZZ_PROMPT[g~] or ZZ_PROMPT[go] 
-    [gg]='\ue725'           # Branch glyph
+    [gc]=''                 # Either ZZ_PROMPT[g~] or ZZ_PROMPT[go]
+    [gg]=''                 # Git glyp to use, either [gi] or [gd]
+    [gi]='\ue725'           # Branch glyph
+    [gd]='\ueb51'           # Dotfiles repo glyph
     [g~]='red'              # (K) Working tree changes
     [go]='#5ca37a'          # (K) Working tree clean
     ## RPS1
@@ -110,6 +112,7 @@ _setup_prompt() {
     # Update Git status before each prompt
     precmd() {
         _ZZ_PROMPT[gs]=$(git_status_line)
+        [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gi]}
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M g~) || _ZZ_PROMPT[gc]=$(M go)
     }
 
