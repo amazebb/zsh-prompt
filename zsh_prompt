@@ -164,4 +164,12 @@ _setup_prompt() {
     precmd_functions=(_ps1 _rps1)
 }
 
+_chpwd_update() {
+    # shellcheck disable=SC2016
+    print -nP '\e]2;${PWD/#$HOME/\U000f07d2 }\a'
+}
+
+chpwd_functions+=(_chpwd_update)
+
 _setup_prompt
+_chpwd_update 
