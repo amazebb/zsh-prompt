@@ -15,10 +15,10 @@ _ZZ_PROMPT=(
     [p]='\uea83'            # Folder glyph
     # Git
     [gs]=''                 # Git status line
-    [gc]=''                 # Either ZZ_PROMPT[g~] or ZZ_PROMPT[go]
-    [gg]=''                 # Git glyp to use, either [gi] or [gd]
-    [gi]='\ue725'           # Branch glyph
-    [gd]='\ueb51'           # Dotfiles repo glyph
+    [gc]=''                 # Either [g~] or [go]
+    [gg]=''                 # Git glyph, either [gi] or [gd]
+    [gi]=' \uf1d3 |\ue725 ' # Regular git branch glyph
+    [gd]='\U000f0613 \uf1d3 |\ue725 ' # Dotfiles repo glyph
     [g~]='red'              # (K) Working tree changes
     [go]='#5ca37a'          # (K) Working tree clean
     ## RPS1
@@ -63,13 +63,14 @@ _setup_prompt() {
     }
 
     _ps1a() {
-        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)<..<$(_pwd-icon)"
+        [[ $PWD == $HOME/* ]] && trunc='<'$(M h)' ...<' || trunc='<..<'
+        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd-icon)"
     }
 
     _ps1b() {
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg) $(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg)$(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
         else
             print -n -- "$(R)$S %f"
         fi
@@ -166,7 +167,8 @@ _setup_prompt() {
 
 _chpwd_update() {
     # shellcheck disable=SC2016
-    print -nP '\e]2;${PWD/#$HOME/\U000f07d2 }\a'
+    # print -nP '\e]2;${PWD/#$HOME/\U000f07d2 }\a'
+    print -nP '\e]2;${PWD/#$HOME/\~}\a'
 }
 
 chpwd_functions+=(_chpwd_update)
