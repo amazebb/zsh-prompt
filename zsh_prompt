@@ -49,8 +49,8 @@ _setup_prompt() {
     }
 
     R() {
-        # Prevent Terminal.app brightening font (macOS <=15.x)
-        # color with no background:
+        # Prevent Terminal.app (macOS <=15.x )from brightening font color
+        # with no background:
         # https://apple.stackexchange.com/questions/282911/prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
         # Setting background to an out of range value works,
         # %k and %K{256} do not work.
@@ -176,7 +176,6 @@ _setup_prompt() {
 
 _chpwd_update() {
     # shellcheck disable=SC2016
-    # print -nP '\e]2;${PWD/#$HOME/\U000f07d2 }\a'
     print -nP '\e]2;${PWD/#$HOME/\~}\a'
 }
 
