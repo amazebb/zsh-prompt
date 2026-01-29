@@ -159,9 +159,10 @@ _setup_prompt() {
     }
 
     _rps1b() {
-        git_repo="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        git_repo+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
-        print -n -- "$git_repo"
+        local s
+        s="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
+        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
+        print -n -- "$s"
     }
 
     _rps1() {
