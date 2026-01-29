@@ -123,8 +123,7 @@ _setup_prompt() {
 
         [[ "$PWD" != "$1" ]] && relative="${PWD#"$1"/}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
-        for ((i = 0; i < depth; i++)); do result+="../"; done
-        # repeat $depth; result+="../"
+        repeat $depth; result+="../"
 
         print -n -- "$result"
     }
@@ -132,7 +131,7 @@ _setup_prompt() {
     _rps1a(){
         local _env
         if [[ -n $VIRTUAL_ENV ]]; then
-            local venv C _env 
+            local venv C 
             venv="${VIRTUAL_ENV%/*}"
             if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
                 C="$(M b)"
