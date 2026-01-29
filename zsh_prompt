@@ -2,60 +2,61 @@
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     ## Prompt
-    [width]='40'            # Prompt width
+    [width]='40' # Prompt width
     # Colors (K=background, F=foreground)
-    [b]='blue'              # (K) PWD
-    [f]='#eeffee'           # (F) Text
-    [k]='%{\e[48;5;256m%}'  # (K) Reset for macOS Terminal
-    ## PS1 
-    [p1]='\ue0b0'           # Trailing glyph
+    [b]='blue'             # (K) PWD
+    [f]='#eeffee'          # (F) Text
+    [k]='%{\e[48;5;256m%}' # (K) Reset for macOS Terminal
+    ## PS1
+    [p1]='\ue0b0' # Trailing glyph
     # Home
-    [u]=''                  # user@host ("%n@%m"), or hide ("")
-    [h]='\U000f07d2'        # Home glyph
-    [p]='\uea83'            # Folder glyph
+    [u]=''           # user@host ("%n@%m")
+    [h]='\U000f07d2' # HOME glyph
+    [p]='\uea83'     # Folder glyph
     # Git
-    [gs]=''                 # Git status line
-    [gc]=''                 # Either [g~] or [go]
-    [gt]='\ue65d'           # Git glyph
-    [gg]=''                 # Git status glyph, either [gi] or [gd]
-    [gi]='\ue725 '          # Regular git branch glyph
-    [gd]='\uf444\ue725 '    # Dotfiles repo glyph
-    [g~]='red'              # (K) Working tree changes
-    [go]='#5ca37a'          # (K) Working tree clean
+    [gs]=''              # Status line message
+    [gi]='\ue725 '       # Regular git branch glyph
+    [gd]='\uf444\ue725 ' # Dotfiles glyph
+    [gg]=''              # Status glyph, either [gi] or [gd]
+    [gx]='red'           # (K) Working tree changes
+    [go]='#5ca37a'       # (K) Working tree clean
+    [gc]=''              # Either [gx] or [go]
     ## RPS1
-    [r1]='\ue0b2'           # Leading glyph 
+    [r1]='\ue0b2' # Leading glyph
     # Virtiual Environment
-    [py]='\ue606'           # Python glyph
-    [cv]='magenta'          # (K) Outside project folder
+    [gt]='\ue65d'  # Git glyph
+    [py]='\ue606'  # Python glyph
+    [cv]='magenta' # (K) Outside project folder
     # System
-    [t]='*'                 # Date/Time
-    [x]='red'               # (K) Last command error
- )
+    [t]='*'   # Date/Time
+    [x]='red' # (K) Last command error
+)
 
 _setup_prompt() {
     # Enable command substitution in prompt
     setopt PROMPT_SUBST
 
-    M(){
+    M() {
         print -n -- "${_ZZ_PROMPT[$1]}"
     }
 
-    F(){
+    F() {
         print -r -- "%{%F{$1}%}"
     }
 
-    K(){
+    K() {
         print -r -- "%{%K{$1}%}"
     }
-   
-    R(){
-       # In macOS 15.x and prior, prevent Terminal.app brightening font color with no background:
-       # https://apple.stackexchange.com/questions/282911/
-       # prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
-       # Setting background to an out of range value works, %k and %K{256} do not work.
-       # Not needed for Kitty and terminals that support truecolor
-       [[ -z "$KITTY_WINDOW_ID" ]] && k="%k$(M k)" || k='%k'
-       print -n -- "$k"
+
+    R() {
+        # Prevent Terminal.app brightening font (macOS <=15.x)
+        # color with no background:
+        # https://apple.stackexchange.com/questions/282911/prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
+        # Setting background to an out of range value works,
+        # %k and %K{256} do not work.
+        # Not needed for Kitty and terminals that support truecolor
+        [[ -z "$KITTY_WINDOW_ID" ]] && k="%k$(M k)" || k='%k'
+        print -n -- "$k"
     }
 
     _pwd_icon() {
@@ -65,7 +66,7 @@ _setup_prompt() {
 
     _ps1a() {
         [[ $PWD == $HOME/* ]] && trunc='<'$(M h)' ...<' || trunc='<..<'
-        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
+         print -r -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
     }
 
     _ps1b() {
@@ -75,7 +76,7 @@ _setup_prompt() {
         else
             print -n -- "$(R)$S %f"
         fi
-     }
+    }
 
     # Build left prompt
     _ps1() {
@@ -85,7 +86,7 @@ _setup_prompt() {
     # Git status line wrapper - uses dotfiles if available, otherwise git_stline
     git_status_line() {
         # shellcheck disable=SC2154
-        if (( $+functions[dotfiles] )); then
+        if (($+functions[dotfiles])); then
             dotfiles stline
         else
             git_stline
@@ -111,7 +112,7 @@ _setup_prompt() {
     precmd() {
         _ZZ_PROMPT[gs]=$(git_status_line)
         [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gi]}
-        [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M g~) || _ZZ_PROMPT[gc]=$(M go)
+        [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
     _venv_path() {
@@ -128,10 +129,10 @@ _setup_prompt() {
         print -n -- "$result"
     }
 
-    _rps1a(){
+    _rps1a() {
         local _env
         if [[ -n $VIRTUAL_ENV ]]; then
-            local venv C 
+            local venv C
             venv="${VIRTUAL_ENV%/*}"
             if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
                 C="$(M b)"
@@ -156,14 +157,14 @@ _setup_prompt() {
         fi
         print -n -- "$(R)$_env"
     }
-   
-    _rps1b(){
+
+    _rps1b() {
         git_repo="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
         git_repo+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
         print -n -- "$git_repo"
     }
 
-    _rps1(){
+    _rps1() {
         # shellcheck disable=SC2034
         RPS1="$(_rps1a)$(_rps1b)"
     }
@@ -182,4 +183,4 @@ _chpwd_update() {
 chpwd_functions+=(_chpwd_update)
 
 _setup_prompt
-_chpwd_update 
+_chpwd_update
