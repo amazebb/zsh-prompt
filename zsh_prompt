@@ -1,33 +1,32 @@
 # Function to set up custom ZSH prompt with git status
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
-    ## Prompt
-    [width]='40' # Prompt width
-    # Colors (K=background, F=foreground)
-    [b]='blue'             # (K) PWD
-    [f]='#eeffee'          # (F) Text
+    # Prompt (colors: K=background, F=foreground)
+    [width]='40'           # Prompt width
+    [f]='white'            # (F) Text
     [k]='%{\e[48;5;256m%}' # (K) Reset for macOS Terminal
     ## PS1
+    [b]='blue'    # (K) PWD
     [p1]='\ue0b0' # Trailing glyph
-    # Home
+    ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
     [p]='\uea83'     # Folder glyph
-    # Git
-    [gs]=''              # Status line message
-    [gi]='\ue725 '       # Regular git branch glyph
-    [gd]='\uf444\ue725 ' # Dotfiles glyph
-    [gg]=''              # Status glyph, either [gi] or [gd]
-    [gx]='red'           # (K) Working tree changes
-    [go]='#5ca37a'       # (K) Working tree clean
-    [gc]=''              # Either [gx] or [go]
+    ### Git
+    [gs]=''               # Status line message
+    [gi]='\ue725 '        # Regular git branch glyph
+    [gd]='\uf444 \ue725 ' # Dotfiles glyph
+    [gg]=''               # Status glyph, either [gi] or [gd]
+    [gx]='red'            # (K) Working tree changes
+    [go]='green'          # (K) Working tree clean
+    [gc]=''               # Either [gx] or [go]
     ## RPS1
     [r1]='\ue0b2' # Leading glyph
-    # Virtiual Environment
+    ### Virtiual Environment
     [gt]='\ue65d'  # Git glyph
     [py]='\ue606'  # Python glyph
     [cv]='magenta' # (K) Outside project folder
-    # System
+    ### System
     [t]='*'   # Date/Time
     [x]='red' # (K) Last command error
 )
