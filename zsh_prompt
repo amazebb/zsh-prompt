@@ -16,9 +16,10 @@ _ZZ_PROMPT=(
     # Git
     [gs]=''                 # Git status line
     [gc]=''                 # Either [g~] or [go]
-    [gg]=''                 # Git glyph, either [gi] or [gd]
-    [gi]=' \uf1d3 |\ue725 ' # Regular git branch glyph
-    [gd]='\U000f0613 \uf1d3 |\ue725 ' # Dotfiles repo glyph
+    [gt]='\ue65d'           # Git glyph
+    [gg]=''                 # Git status glyph, either [gi] or [gd]
+    [gi]='\ue725 '          # Regular git branch glyph
+    [gd]='\uf444\ue725 '    # Dotfiles repo glyph
     [g~]='red'              # (K) Working tree changes
     [go]='#5ca37a'          # (K) Working tree clean
     ## RPS1
@@ -57,14 +58,14 @@ _setup_prompt() {
        print -n -- "$k"
     }
 
-    _pwd-icon() {
+    _pwd_icon() {
         [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h) } || p=$(M p)" "$PWD
         print -n -- "$p"
     }
 
     _ps1a() {
         [[ $PWD == $HOME/* ]] && trunc='<'$(M h)' ...<' || trunc='<..<'
-        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd-icon)"
+        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
     }
 
     _ps1b() {
@@ -74,7 +75,7 @@ _setup_prompt() {
         else
             print -n -- "$(R)$S %f"
         fi
-    }
+     }
 
     # Build left prompt
     _ps1() {
@@ -93,10 +94,6 @@ _setup_prompt() {
 
     # Fallback git status line for standard git repos
     git_stline() {
-        # typeset -gA _ZD
-        # _ZD=(
-        #     [prompt]=""
-        # )
         local p
         if [[ -n $porcelain ]]; then
             local -i s=0
@@ -127,14 +124,17 @@ _setup_prompt() {
         [[ "$PWD" != "$1" ]] && relative="${PWD#"$1"/}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
         for ((i = 0; i < depth; i++)); do result+="../"; done
+        # repeat $depth; result+="../"
 
         print -n -- "$result"
     }
 
     _rps1a(){
-        if [[ -n "$VIRTUAL_ENV" ]]; then
+        local _env
+        if [[ -n $VIRTUAL_ENV ]]; then
+            local venv C _env 
             venv="${VIRTUAL_ENV%/*}"
-            if [[ "$PWD" == "$venv"/* || "$PWD" == "$venv" ]]; then
+            if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
                 C="$(M b)"
                 venv=$(_venv_path "$venv")
                 venv="$venv${VIRTUAL_ENV##*/}"
@@ -143,16 +143,25 @@ _setup_prompt() {
                 venv=${venv/#$PWD/}
                 venv="${venv/#$HOME/~}"
             fi
-            py_venv="$(F "$C")$(M r1)"
-            py_venv+="%f$(K "$C")$(M py) $venv"
+            _env="$(F "$C")$(M r1)"
+            _env+="%f$(K "$C")$(M py) $venv"
+        elif [[ -n $(M gs) ]]; then
+            local git_repo git_dir C
+            git_repo="$(dotfiles getrepo)"
+            git_dir="${git_repo%/*}"
+            git_dir=$(_venv_path "$git_dir")
+            git_dir="$git_dir${git_repo##*/}"
+            C="$(M b)"
+            _env="$(F "$C")$(M r1)"
+            _env+="%f$(K "$C")$(M gt) $git_dir"
         fi
-        print -n -- "$(R)$py_venv"
+        print -n -- "$(R)$_env"
     }
    
     _rps1b(){
-        r="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        r+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
-        print -n -- "$r"
+        git_repo="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
+        git_repo+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
+        print -n -- "$git_repo"
     }
 
     _rps1(){
