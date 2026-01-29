@@ -144,7 +144,7 @@ _setup_prompt() {
                 venv="${venv/#$HOME/~}"
             fi
             _env="$(F "$C")$(M r1)"
-            _env+="%f$(K "$C")$(M py) $venv"
+            _env+="$(F "$(M f)")$(K "$C")$(M py) $venv"
         elif [[ -n $(M gs) ]]; then
             local git_repo git_dir C
             git_repo="$(dotfiles getrepo)"
@@ -153,7 +153,7 @@ _setup_prompt() {
             git_dir="$git_dir${git_repo##*/}"
             C="$(M b)"
             _env="$(F "$C")$(M r1)"
-            _env+="%f$(K "$C")$(M gt) $git_dir"
+            _env+="$(F "$(M f)")$(K "$C")$(M gt) $git_dir"
         fi
         print -n -- "$(R)$_env"
     }
