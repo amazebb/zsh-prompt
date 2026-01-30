@@ -27,7 +27,7 @@ _ZZ_PROMPT=(
     [py]='\ue606'  # Python glyph
     [cv]='magenta' # (K) Outside project folder
     ### System
-    [t]='*'   # Date/Time
+    [t]='%D{%H%M}'   # Date/Time
     [x]='red' # (K) Last command error
 )
 
@@ -160,7 +160,7 @@ _setup_prompt() {
     _rps1b() {
         local s
         s="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))%$(M t)"
+        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(M t)"
         print -n -- "$s"
     }
 
