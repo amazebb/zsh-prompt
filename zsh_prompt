@@ -2,12 +2,11 @@
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
-    [width]='40'           # Prompt width
-    [f]='white'            # (F) Text
-    [k]='%{\e[48;5;256m%}' # (K) Reset for macOS Terminal
+    [width]='40'    # Prompt width
+    [f]='white'     # (F) Text
     ## PS1
-    [b]='blue'    # (K) PWD
-    [p1]='\ue0b0' # Trailing glyph
+    [b]='blue'      # (K) PWD
+    [p1]='\ue0b0'   # Trailing glyph
     ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
@@ -21,14 +20,14 @@ _ZZ_PROMPT=(
     [go]='green'          # (K) Working tree clean
     [gc]=''               # Either [gx] or [go]
     ## RPS1
-    [r1]='\ue0b2' # Leading glyph
+    [r1]='\ue0b2'   # Leading glyph
     ### Virtiual Environment
-    [gt]='\ue65d'  # Git glyph
-    [py]='\ue606'  # Python glyph
-    [cv]='magenta' # (K) Outside project folder
+    [gt]='\ue65d'   # Git glyph
+    [py]='\ue606'   # Python glyph
+    [cv]='magenta'  # (K) Outside project folder
     ### System
-    [t]='%D{%H%M}'   # Date/Time
-    [x]='red' # (K) Last command error
+    [t]='%D{%H%M}'  # Date/Time
+    [x]='red'       # (K) Last command error
 )
 
 _setup_prompt() {
@@ -54,7 +53,7 @@ _setup_prompt() {
         # Setting background to an out of range value works,
         # %k and %K{256} do not work.
         # Not needed for Kitty and terminals that support truecolor
-        [[ -z "$KITTY_WINDOW_ID" ]] && k="%k$(M k)" || k='%k'
+        [[ -z "$KITTY_WINDOW_ID" ]] && k="%k%{\e[48;5;256m%}" || k='%k'
         print -n -- "$k"
     }
 
