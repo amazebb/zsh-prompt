@@ -26,7 +26,7 @@ _ZZ_PROMPT=(
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
     ### System
-    [t]='%D{%H%M}'  # Date/Time
+    [t]='%D{%H:%M}' # Date/Time
     [x]='red'       # (K) Last command error
 )
 
@@ -59,6 +59,14 @@ _setup_prompt() {
         # Not needed for Kitty and terminals that support truecolor
         [[ -z "$KITTY_WINDOW_ID" ]] && k="%k%{\e[48;5;256m%}" || k='%k'
         print -n -- "$k"
+    }
+
+    T() {
+        if [[ -n "$KITTY_WINDOW_ID" ]]; then
+            print -n -- '%D{%H}%{\e]66;n=2:d=3:w=2:v=0;%}%D{%M}%{\a%}'
+        else
+            print -n -- "$(M t)"
+        fi
     }
 
     _pwd_icon() {
@@ -163,7 +171,7 @@ _setup_prompt() {
     _rps1b() {
         local s
         s="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(M t)"
+        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(T)"
         print -n -- "$s"
     }
 
