@@ -70,12 +70,12 @@ _setup_prompt() {
     }
 
     _pwd_icon() {
-        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h scale) } || p=$(M p scale)" "$PWD
+        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h) } || p=$(M p)" "$PWD
         print -n -- "$p"
     }
 
     _ps1a() {
-        [[ $PWD == $HOME/* ]] && trunc='<'$(M h scale)' ...<' || trunc='<..<'
+        [[ $PWD == $HOME/* ]] && trunc="<$(M h) ...<" || trunc='<..<'
         print -r -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
     }
 
