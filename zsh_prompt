@@ -13,7 +13,7 @@ _ZZ_PROMPT=(
     [p]='\uea83'     # Folder glyph
     ### Git
     [gs]=''               # Status line message
-    [gi]='\ue725 '        # Regular git branch glyph
+    [gi]='\ue725'         # Regular git branch glyph
     [gd]='\uf444 \ue725 ' # Dotfiles glyph
     [gg]=''               # Status glyph, either [gi] or [gd]
     [gx]='red'            # (K) Working tree changes
@@ -34,8 +34,12 @@ _setup_prompt() {
     # Enable command substitution in prompt
     setopt PROMPT_SUBST
 
-    M() {
-        print -n -- "${_ZZ_PROMPT[$1]}"
+    M(){ 
+        if [[ -n "$KITTY_WINDOW_ID" ]] && [[ $2 == "scale" ]]; then
+            print -n -- "%{\e]66;n=6:d=7:v=2:w=1;${_ZZ_PROMPT[$1]}%}\a"
+        else
+            print -n -- "${_ZZ_PROMPT[$1]}"
+        fi
     }
 
     F() {
@@ -58,19 +62,19 @@ _setup_prompt() {
     }
 
     _pwd_icon() {
-        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h) } || p=$(M p)" "$PWD
+        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h scale) } || p=$(M p scale)" "$PWD
         print -n -- "$p"
     }
 
     _ps1a() {
-        [[ $PWD == $HOME/* ]] && trunc='<'$(M h)' ...<' || trunc='<..<'
-         print -r -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
+        [[ $PWD == $HOME/* ]] && trunc='<'$(M h scale)' ...<' || trunc='<..<'
+        print -r -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
     }
 
     _ps1b() {
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg)$(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg scale) $(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
         else
             print -n -- "$(R)$S %f"
         fi
@@ -142,7 +146,7 @@ _setup_prompt() {
                 venv="${venv/#$HOME/~}"
             fi
             _env="$(F "$C")$(M r1)"
-            _env+="$(F "$(M f)")$(K "$C")$(M py) $venv"
+            _env+="$(F "$(M f)")$(K "$C")$(M py scale) $venv"
         elif [[ -n $(M gs) ]]; then
             local git_repo git_dir C
             git_repo="$(dotfiles getrepo)"
@@ -151,7 +155,7 @@ _setup_prompt() {
             git_dir="$git_dir${git_repo##*/}"
             C="$(M b)"
             _env="$(F "$C")$(M r1)"
-            _env+="$(F "$(M f)")$(K "$C")$(M gt) $git_dir"
+            _env+="$(F "$(M f)")$(K "$C")$(M gt scale) $git_dir"
         fi
         print -n -- "$(R)$_env"
     }
