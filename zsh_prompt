@@ -62,21 +62,24 @@ _setup_prompt() {
     }
 
     T() {
-        if [[ -n "$KITTY_WINDOW_ID" ]]; then
-            print -n -- '%D{%H}%{\e]66;n=2:d=3:w=2:v=0;%}%D{%M}%{\a%}'
-        else
-            print -n -- "$(M t)"
-        fi
-    }
-
-    _pwd_icon() {
-        [[ $PWD = *$HOME* ]] && p=${PWD/#$HOME/$(M h) } || p=$(M p)" "$PWD
-        print -n -- "$p"
+        print -n -- "$(M t)"
+        # if [[ -n "$KITTY_WINDOW_ID" ]]; then
+        #     print -n -- '%D{%H}%{\e]66;n=2:d=3:w=2:v=0;%}%D{%M}%{\a%}'
+        # else
+        #     print -n -- "$(M t)"
+        # fi
     }
 
     _ps1a() {
-        [[ $PWD == $HOME/* ]] && trunc="<$(M h) ...<" || trunc='<..<'
-        print -r -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$trunc$(_pwd_icon)"
+        local p
+        if [[ $PWD = "$HOME" ]]; then
+            p="<..<$(M h scale) "
+        elif [[ $PWD == $HOME/* ]]; then 
+            p="<$(M h)  ..<$(M h) ${PWD#$HOME}"
+        else
+            p="<$(M p)  ..<$(M p) $PWD"
+        fi
+        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$p"
     }
 
     _ps1b() {
