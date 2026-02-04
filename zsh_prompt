@@ -2,23 +2,23 @@
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
-    [width]='40'    # Prompt width
-    [f]='white'     # (F) Text
+    [width]='40'     # Prompt width
+    [f]='white'      # (F) Text
     ## PS1
-    [b]='blue'      # (K) PWD
-    [p1]='\ue0b0'   # Trailing glyph
+    [b]='blue'       # (K) PWD
+    [p1]='\ue0b0'    # Trailing glyph
     ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
     [p]='\uea83'     # Folder glyph
     ### Git
-    [gs]=''               # Status line message
-    [gi]='\ue725'         # Regular git branch glyph
-    [gd]='\uf444 \ue725 ' # Dotfiles glyph
-    [gg]=''               # Status glyph, either [gi] or [gd]
-    [gx]='red'            # (K) Working tree changes
-    [go]='green'          # (K) Working tree clean
-    [gc]=''               # Either [gx] or [go]
+    [gs]=''         # Status line message
+    [gb]='\ue725'   # Branch glyph
+    [gd]='\uf444'   # Dotfiles glyph
+    [gg]=''         # If dotfiles [gd] or ''
+    [gx]='red'      # (K) Working tree changes
+    [go]='green'    # (K) Working tree clean
+    [gc]=''         # Either [gx] or [go]
     ## RPS1
     [r1]='\ue0b2'   # Leading glyph
     ### Virtiual Environment
@@ -36,7 +36,7 @@ _setup_prompt() {
 
     M(){ 
         if [[ -n "$KITTY_WINDOW_ID" ]] && [[ $2 == "scale" ]]; then
-            print -n -- "%{\e]66;n=6:d=7:v=2:w=1;${_ZZ_PROMPT[$1]}%}\a"
+            print -n -- "%{\e]66;n=6:d=7:v=2:w=1;%}${_ZZ_PROMPT[$1]}%{\a%}"
         else
             print -n -- "${_ZZ_PROMPT[$1]}"
         fi
@@ -70,6 +70,13 @@ _setup_prompt() {
         # fi
     }
 
+    # Update Git status before each prompt
+    precmd() {
+        _ZZ_PROMPT[gs]=$(git_status_line)
+        [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
+        [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
+    }
+
     _ps1a() {
         local p
         if [[ $PWD = "$HOME" ]]; then
@@ -85,7 +92,7 @@ _setup_prompt() {
     _ps1b() {
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg scale) $(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg) $(M gb scale) $(M gs)$(R)$(F "$(M gc)")$(M p1) %f"
         else
             print -n -- "$(R)$S %f"
         fi
@@ -119,13 +126,6 @@ _setup_prompt() {
             ((s)) && p+=" ?$s" # untracked
         fi
         echo "$p"
-    }
-
-    # Update Git status before each prompt
-    precmd() {
-        _ZZ_PROMPT[gs]=$(git_status_line)
-        [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gi]}
-        [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
     _venv_path() {
