@@ -82,9 +82,9 @@ _setup_prompt() {
         if [[ $PWD = "$HOME" ]]; then
             p="<..<$(M h scale) "
         elif [[ $PWD == $HOME/* ]]; then 
-            p="<$(M h)  ..<$(M h) ${PWD#$HOME}"
+            p="<$(M h) ..<$(M h scale) ${PWD#$HOME}"
         else
-            p="<$(M p)  ..<$(M p) $PWD"
+            p="<$(M p)  ..<$(M p scale) $PWD"
         fi
         print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$p"
     }
