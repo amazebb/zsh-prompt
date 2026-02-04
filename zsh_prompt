@@ -3,7 +3,6 @@ typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
     [width]='40'     # Prompt width
-    [f]='white'      # (F) Text
     ## PS1
     [b]='blue'       # (K) PWD
     [p1]='\ue0b0'    # Trailing glyph
@@ -63,15 +62,15 @@ _setup_prompt() {
 
     T() {
         print -n -- "$(M t)"
-        # if [[ -n "$KITTY_WINDOW_ID" ]]; then
-        #     print -n -- '%D{%H}%{\e]66;n=2:d=3:w=2:v=0;%}%D{%M}%{\a%}'
-        # else
-        #     print -n -- "$(M t)"
-        # fi
     }
 
     # Update Git status before each prompt
     precmd() {
+        if [[ $(uname) == Darwin ]] && defaults read -g AppleInterfaceStyle 2>/dev/null; then
+            _ZZ_PROMPT[f]='white'
+        else
+            _ZZ_PROMPT[f]='black'
+        fi
         _ZZ_PROMPT[gs]=$(git_status_line)
         [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
