@@ -32,6 +32,7 @@ _ZZ_PROMPT=(
 _setup_prompt() {
     # Enable command substitution in prompt
     setopt PROMPT_SUBST
+    zmodload zsh/datetime
 
     M(){ 
         if [[ -n "$KITTY_WINDOW_ID" ]] && [[ $2 == "scale" ]]; then
@@ -67,13 +68,14 @@ _setup_prompt() {
 
     # Update Git status before each prompt
     precmd() {
+        dotfiles --zsh-prompt
         _ZZ_PROMPT[f]='white'
         if [[ $(uname) == Darwin ]] && [[ -n "$KITTY_WINDOW_ID" ]]; then
             [[ $(defaults read -g AppleInterfaceStyle &>/dev/null) ]] && _ZZ_PROMPT[f]='white' \
                 || _ZZ_PROMPT[f]='black'
         fi
         _ZZ_PROMPT[gs]=$(git_status_line)
-        [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
+        [[ ${_ZD[track]} == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
@@ -107,7 +109,7 @@ _setup_prompt() {
     git_status_line() {
         # shellcheck disable=SC2154
         if (($+functions[dotfiles])); then
-            dotfiles stline
+            echo "${_ZD[prompt]}"
         else
             git_stline
         fi
@@ -160,7 +162,7 @@ _setup_prompt() {
             _env+="$(F "$(M f)")$(K "$C")$(M py scale) $venv"
         elif [[ -n $(M gs) ]]; then
             local git_repo git_dir C
-            git_repo="$(dotfiles getrepo)"
+            git_repo="${_ZD[gitdir]}"
             git_dir="${git_repo%/*}"
             git_dir=$(_venv_path "$git_dir")
             git_dir="$git_dir${git_repo##*/}"
@@ -181,6 +183,18 @@ _setup_prompt() {
     _rps1() {
         # shellcheck disable=SC2034
         RPS1="$(_rps1a)$(_rps1b)"
+    }
+
+    _time_ps1() {
+        local start=$EPOCHREALTIME
+        _ps1
+        printf "PS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) >&2
+    }
+
+    _time_rps1() {
+        local start=$EPOCHREALTIME
+        _rps1
+        printf "RPS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) >&2
     }
 
     # Final hook to update prompt
