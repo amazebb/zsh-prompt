@@ -20,7 +20,7 @@ _ZZ_PROMPT=(
     [gc]=''         # Either [gx] or [go]
     ## RPS1
     [r1]='\ue0b2'   # Leading glyph
-    ### Virtiual Environment
+    ### Virtual Environment
     [gt]='\ue65d'   # Git glyph
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
@@ -50,12 +50,13 @@ _setup_prompt() {
     }
 
     R() {
-        # Prevent Terminal.app (macOS <=15.x )from brightening font color
-        # with no background:
-        # https://apple.stackexchange.com/questions/282911/prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
-        # Setting background to an out of range value works,
+        # Prevent Terminal.app (macOS <=15.x) from brightening font color
+        # with no background by setting background to an out of range value,
         # %k and %K{256} do not work.
         # Not needed for Kitty and terminals that support truecolor
+        #
+        # https://apple.stackexchange.com/questions/282911/
+        # prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
         [[ -z "$KITTY_WINDOW_ID" ]] && k="%k%{\e[48;5;256m%}" || k='%k'
         print -n -- "$k"
     }
@@ -66,10 +67,10 @@ _setup_prompt() {
 
     # Update Git status before each prompt
     precmd() {
-        if [[ $(uname) == Darwin ]] && defaults read -g AppleInterfaceStyle 2>/dev/null; then
-            _ZZ_PROMPT[f]='white'
-        else
-            _ZZ_PROMPT[f]='black'
+        _ZZ_PROMPT[f]='white'
+        if [[ $(uname) == Darwin ]] && [[ -n "$KITTY_WINDOW_ID" ]]; then
+            [[ $(defaults read -g AppleInterfaceStyle &>/dev/null) ]] && _ZZ_PROMPT[f]='white' \
+                || _ZZ_PROMPT[f]='black'
         fi
         _ZZ_PROMPT[gs]=$(git_status_line)
         [[ $(dotfiles track) == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
@@ -79,11 +80,11 @@ _setup_prompt() {
     _ps1a() {
         local p
         if [[ $PWD = "$HOME" ]]; then
-            p="<..<$(M h scale) "
+            p="<..< $(M h scale) "
         elif [[ $PWD == $HOME/* ]]; then 
-            p="<$(M h) ..<$(M h scale) ${PWD#$HOME}"
+            p="< $(M h) ..< $(M h scale) ${PWD#$HOME}"
         else
-            p="<$(M p)  ..<$(M p scale) $PWD"
+            p="< $(M p)  ..< $(M p scale) $PWD"
         fi
         print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$p"
     }
