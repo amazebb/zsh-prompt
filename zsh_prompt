@@ -69,10 +69,10 @@ _setup_prompt() {
     # Update Git status before each prompt
     precmd() {
         dotfiles --zsh-prompt
-        _ZZ_PROMPT[f]='white'
         if [[ $(uname) == Darwin ]] && [[ -n "$KITTY_WINDOW_ID" ]]; then
-            [[ $(defaults read -g AppleInterfaceStyle &>/dev/null) ]] && _ZZ_PROMPT[f]='white' \
-                || _ZZ_PROMPT[f]='black'
+            [[ $(defaults read -g AppleInterfaceStyle 2>/dev/null) ]] && _ZZ_PROMPT[f]='white' || _ZZ_PROMPT[f]='black'
+        else
+            _ZZ_PROMPT[f]='white'
         fi
         _ZZ_PROMPT[gs]=$(git_status_line)
         [[ ${_ZD[track]} == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
@@ -84,7 +84,7 @@ _setup_prompt() {
         if [[ $PWD = "$HOME" ]]; then
             p="<..< $(M h scale) "
         elif [[ $PWD == $HOME/* ]]; then 
-            p="< $(M h) ..< $(M h scale) ${PWD#$HOME}"
+            p="< $(M h) ..< $(M h scale) ${PWD#"$HOME"}"
         else
             p="< $(M p)  ..< $(M p scale) $PWD"
         fi
