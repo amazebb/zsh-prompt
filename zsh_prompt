@@ -73,7 +73,7 @@ _setup_prompt() {
 
     _AT256() {
         [[ $OSTYPE == darwin* ]] && [[ $TERM_PROGRAM == Apple_Terminal ]] \
-            && (( ${OSTYPE#darwin} < 26.0 )) 
+            && (( ${OSTYPE#darwin} < 25.0 )) 
     }
 
     # Update Git status before each prompt
