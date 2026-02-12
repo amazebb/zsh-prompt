@@ -6,44 +6,47 @@ This is a ZSH prompt customization script that provides a styled prompt with Git
 status integration, Python virtual environment display, and command exit status
 indicators.
 
-## Usage
+## Install
 
-Source the script in your `.zshrc`:
 ```zsh
-source /path/to/zsh_prompt
+mkdir -p $HOME/.local/share
+git clone https://github.com/broeknbytes/zsh-prompt.git $HOME/.local/share/zsh-prompt
+```
+
+Add to your .zshrc if not already:
+
+```zsh
+echo '[[ -f $HOME/.local/share/zsh-prompt/zsh_prompt ]] && source $HOME/.local/share/zsh-prompt/zsh_prompt' >> ~/.zshrc
 ```
 
 ### Screenshots
 An example of what the zsh prompt looks like in action
 
-![Example of git status](zsh-prompt.png)
+| Dark | Light |
+| --- | --- |
+| ![git status modified dark](zsh-prompt-dark.png) | ![git status modified light](zsh-prompt-light.png) |
 
 ## Architecture
 
-The single file `zsh_prompt` follows a declarative configuration pattern:
+The entire implementation lives in `zsh_prompt` (a shell script, not a ZSH plugin framework). Key structure:
 
-1. **ZZ_PROMPT associative array** - Configuration for colors, glyphs, and behavior
-2. **Helper functions** - `M()` retrieves config, `F()`/`K()` set
-   foreground/background colors, `R()` resets colors
-3. **Prompt builders** - Modular functions (`ps1a`, `ps1b`, `rps1a`, `rps1b`)
-   that compose the final prompt
-4. **Hooks** - `precmd_functions` triggers prompt rebuild before each command
+- **`_ZZ_PROMPT` associative array** (top of file): All configuration — colors, glyphs, widths. Keys use short mnemonics (`[b]` = PWD background, `[gx]`/`[go]` = git dirty/clean colors, `[gc]` = computed git color, `[f]` = computed text color for dark/light mode).
+- **Helper functions**: `M()` reads config (with optional Kitty glyph scaling via `\e]66;...`), `F()`/`K()`/`R()` handle ZSH color escapes. `R()` includes a Terminal.app workaround for color brightening.
+- **Prompt segments**: `_ps1a` (left: path), `_ps1b` (left: git status with powerline glyphs), `_rps1a` (right: venv or git repo path), `_rps1b` (right: time + exit status).
+- **`precmd()`**: Runs before each prompt — calls `dotfiles --zsh-prompt` to populate `_ZD[prompt]` with git info, detects macOS dark mode via `defaults read -g AppleInterfaceStyle`, computes `[gc]` and `[gs]`.
+- **`precmd_functions`**: Hooks `_ps1` and `_rps1` to rebuild PS1/RPS1 each prompt.
+- **`_chpwd_update`**: Updates terminal title on directory change.
 
-### Key Configuration Keys
+## External Dependencies
 
-| Key | Purpose |
-|-----|---------|
-| `[b]` | PWD background color |
-| `[g~]`/`[go]` | Git dirty/clean background colors |
-| `[gs]` | Git status line (populated by `dotfiles stline`) |
-| `[cv]` | Venv color when outside project folder |
+Single dependency [dotfiles](https://github.com/broeknbytes/dotfiles.git) 
 
-### External Dependency
+- `dotfiles --zsh-prompt`: Populates `_ZD[prompt]` (git status) and `_ZD[gitdir]` (repo path). If unavailable, falls back to `git_stline()` which parses `$porcelain` (expected to be git porcelain output).
+- `_ZD` associative array: Set externally by the `dotfiles` command; keys used are `[prompt]`, `[gitdir]`, `[track]`.
 
-The `precmd()` hook calls `dotfiles stline` which populates `_ZD[prompt]` with
-git status. This command must be available for git integration to work.
+## Key Conventions
 
-### Terminal Compatibility
-
-The `R()` function includes a workaround for macOS Terminal.app color
-brightening issue (not needed for Kitty or truecolor terminals).
+- Powerline glyphs (`\ue0b0`, `\ue0b2`) for segment separators; Nerd Font glyphs for icons.
+- Kitty-specific glyph scaling uses the `\e]66;...` escape sequence (triggered when `$KITTY_WINDOW_ID` is set).
+- Path display truncates using ZSH `%width<..< ` truncation from the left.
+- Performance timing functions (`_time_ps1`, `_time_rps1`) exist for profiling; swap them into `precmd_functions` to measure.
