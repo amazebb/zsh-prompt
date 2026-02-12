@@ -1,7 +1,14 @@
+# shellcheck disable=SC2154
+# shellcheck disable=SC2079
+# shellcheck disable=SC2034
+# shellcheck disable=SC2016
+#
 # Function to set up custom ZSH prompt with git status
+
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
+    [f]='white'      # (F) global foreground color
     [width]='40'     # Prompt width
     ## PS1
     [b]='blue'       # (K) PWD
@@ -51,14 +58,12 @@ _setup_prompt() {
     }
 
     R() {
-        # Prevent Terminal.app (macOS <=15.x) from brightening font color
-        # with no background by setting background to an out of range value,
-        # %k and %K{256} do not work.
-        # Not needed for Kitty and terminals that support truecolor
+        # Prevent Terminal.app from brightening font color with no background.
+        # Not needed for truecolor terminals.
         #
         # https://apple.stackexchange.com/questions/282911/
         # prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
-        [[ -z "$KITTY_WINDOW_ID" ]] && k="%k%{\e[48;5;256m%}" || k='%k'
+        _AT256 && k="%k%{\e[48;5;256m%}" || k='%k'
         print -n -- "$k"
     }
 
@@ -66,14 +71,14 @@ _setup_prompt() {
         print -n -- "$(M t)"
     }
 
+    _AT256() {
+        [[ $OSTYPE == darwin* ]] && [[ $TERM_PROGRAM == Apple_Terminal ]] \
+            && (( ${OSTYPE#darwin} < 26.0 )) 
+    }
+
     # Update Git status before each prompt
     precmd() {
         dotfiles --zsh-prompt
-        if [[ $(uname) == Darwin ]] && [[ -n "$KITTY_WINDOW_ID" ]]; then
-            [[ $(defaults read -g AppleInterfaceStyle 2>/dev/null) ]] && _ZZ_PROMPT[f]='white' || _ZZ_PROMPT[f]='black'
-        else
-            _ZZ_PROMPT[f]='white'
-        fi
         _ZZ_PROMPT[gs]=$(git_status_line)
         [[ ${_ZD[track]} == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
@@ -107,7 +112,6 @@ _setup_prompt() {
 
     # Git status line wrapper - uses dotfiles if available, otherwise git_stline
     git_status_line() {
-        # shellcheck disable=SC2154
         if (($+functions[dotfiles])); then
             echo "${_ZD[prompt]}"
         else
@@ -131,9 +135,10 @@ _setup_prompt() {
     }
 
     _venv_path() {
-        # Calculate relative path from VENV to current directory as "../" notation
-        # Given a base path (Python virtual environment parent), returns
-        # a string of "../" repeated for each directory level between the base and PWD.
+        # Calculate relative path from VENV to current directory as "../"
+        # notation Given a base path (Python virtual environment parent),
+        # returns a string of "../" repeated for each directory level between
+        # the base and PWD.
         local relative result
         local -i depth=0
 
@@ -181,7 +186,6 @@ _setup_prompt() {
     }
 
     _rps1() {
-        # shellcheck disable=SC2034
         RPS1="$(_rps1a)$(_rps1b)"
     }
 
@@ -198,12 +202,10 @@ _setup_prompt() {
     }
 
     # Final hook to update prompt
-    # shellcheck disable=SC2034
     precmd_functions=(_ps1 _rps1)
 }
 
 _chpwd_update() {
-    # shellcheck disable=SC2016
     print -nP '\e]2;${PWD/#$HOME/\~}\a'
 }
 
