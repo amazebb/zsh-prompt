@@ -51,7 +51,7 @@ _setup_prompt() {
     }
 
     F() {
-        print -r -- "%{%f%F{$1}%}"
+        print -r -- "%{%F{$1}%}"
     }
 
     K() {
