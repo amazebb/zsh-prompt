@@ -94,6 +94,11 @@ _setup_prompt() {
         else
             p="< $(M p)  ..< $(M p scale) $PWD"
         fi
+        if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
+            _ZZ_PROMPT[u]="ssh:%n@%m" 
+        else
+            _ZZ_PROMPT[u]=""
+        fi
         print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$p"
     }
 
