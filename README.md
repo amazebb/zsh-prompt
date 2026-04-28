@@ -24,7 +24,7 @@ An example of what the zsh prompt looks like in action
 
 | Dark | Light |
 | --- | --- |
-| ![git status modified dark](zsh-prompt-dark.png) | ![git status modified light](zsh-prompt-light.png) |
+| ![git status modified dark](img/zsh-prompt-dark.png) | ![git status modified light](img/zsh-prompt-light.png) |
 
 ## Architecture
 
