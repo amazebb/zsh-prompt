@@ -10,13 +10,13 @@ indicators.
 
 ```zsh
 mkdir -p $HOME/.local/share
-git clone https://github.com/broeknbytes/zsh-prompt.git $HOME/.local/share/zsh-prompt
+git clone https://github.com/broeknbytes/zsh-prompt.git $HOME/.local/share/zsh/prompt
 ```
 
 Add to your .zshrc if not already:
 
 ```zsh
-echo '[[ -f $HOME/.local/share/zsh-prompt/zsh_prompt ]] && source $HOME/.local/share/zsh-prompt/zsh_prompt' >> ~/.zshrc
+echo '[[ -f $HOME/.local/share/zsh/prompt/zsh-prompt ]] && source $HOME/.local/share/zsh/prompt/zsh-prompt' >> ~/.zshrc
 ```
 
 ### Screenshots
@@ -28,7 +28,7 @@ An example of what the zsh prompt looks like in action
 
 ## Architecture
 
-The entire implementation lives in `zsh_prompt` (a shell script, not a ZSH plugin framework). Key structure:
+The entire implementation lives in `zsh-prompt` (a shell script, not a ZSH plugin framework). Key structure:
 
 - **`_ZZ_PROMPT` associative array** (top of file): All configuration — colors, glyphs, widths. Keys use short mnemonics (`[b]` = PWD background, `[gx]`/`[go]` = git dirty/clean colors, `[gc]` = computed git color, `[f]` = computed text color for dark/light mode).
 - **Helper functions**: `M()` reads config (with optional Kitty glyph scaling via `\e]66;...`), `F()`/`K()`/`R()` handle ZSH color escapes. `R()` includes a Terminal.app workaround for color brightening.
