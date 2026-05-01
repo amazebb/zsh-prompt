@@ -1,4 +1,4 @@
-# Zsh PROMPT
+# Zsh Prompt
 
 ## Overview
 
