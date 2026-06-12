@@ -142,14 +142,15 @@ _setup_prompt() {
     }
 
     _venv_path() {
-        # Calculate relative path from VENV to current directory as "../"
-        # notation Given a base path (Python virtual environment parent),
-        # returns a string of "../" repeated for each directory level between
+        # Calculate relative path from $1 to current directory as "../"
+        # notation. 
+        # Given a base path (Python venv or .git/), returns 
+        # a string of "../" repeated for each directory level between
         # the base and PWD.
         local relative result
         local -i depth=0
 
-        [[ "$PWD" != "$1" ]] && relative="${PWD#"$1"/}"
+        [[ "$PWD" == "$1"/* ]] && relative="${PWD#"$1"/}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
         repeat $depth; result+="../"
 
@@ -174,7 +175,7 @@ _setup_prompt() {
             _env+="$(F "$(M f)")$(K "$C")$(M py scale) $venv"
         elif [[ -n $(M gs) ]]; then
             local git_repo git_dir C
-            git_repo="${_ZD[gitdir]}"
+            git_repo="${_ZD[gitdir]%/}"
             git_dir="${git_repo%/*}"
             git_dir=$(_venv_path "$git_dir")
             git_dir="$git_dir${git_repo##*/}"
