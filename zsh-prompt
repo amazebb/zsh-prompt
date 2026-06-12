@@ -5,6 +5,7 @@
 # shellcheck disable=SC2140
 
 # Function to set up custom ZSH prompt with git status
+# NOTE: Run `set -x` in the terminal to debug when things go strange! 
 
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
