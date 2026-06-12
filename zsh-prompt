@@ -143,16 +143,25 @@ _setup_prompt() {
 
     _venv_path() {
         # Calculate relative path from $1 to current directory as "../"
-        # notation. 
-        # Given a base path (Python venv or .git/), returns 
+        # notation.
+        # Given a base path (Python venv or .git/), returns
         # a string of "../" repeated for each directory level between
-        # the base and PWD.
+        # the base and PWD. Depths beyond $2 (default 2) collapse to
+        # the shorthand "<depth>X../".
         local relative result
-        local -i depth=0
+        local -i depth=0 depth_n=${2:-2}
 
-        [[ "$PWD" == "$1"/* ]] && relative="${PWD#"$1"/}"
+        # Compare by inode (-ef): APFS is case-insensitive by default,
+        # so $PWD may differ in case from the git/venv path (e.g. zoxide
+        # caching a differently-cased path). Strip the prefix by length to
+        # keep $PWD's actual casing.
+        [[ "${PWD:${#1}:1}" == / && "${PWD:0:${#1}}" -ef "$1" ]] && relative="${PWD:${#1}+1}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
-        repeat $depth; result+="../"
+        if (( depth > depth_n )); then
+            result="${depth}X../"
+        else
+            repeat $depth; result+="../"
+        fi
 
         print -n -- "$result"
     }
@@ -174,11 +183,11 @@ _setup_prompt() {
             _env="$(F "$C")$(M r1)"
             _env+="$(F "$(M f)")$(K "$C")$(M py scale) $venv"
         elif [[ -n $(M gs) ]]; then
-            local git_repo git_dir C
+            local git_repo git_dir git_depth C
             git_repo="${_ZD[gitdir]%/}"
             git_dir="${git_repo%/*}"
-            git_dir=$(_venv_path "$git_dir")
-            git_dir="$git_dir${git_repo##*/}"
+            git_depth=$(_venv_path "$git_dir")
+            git_dir="$git_depth${git_repo##*/}"
             C="$(M b)"
             _env="$(F "$C")$(M r1)"
             _env+="$(F "$(M f)")$(K "$C")$(M gt scale) $git_dir"
