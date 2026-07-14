@@ -12,27 +12,35 @@ _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
     [f]='white'      # (F) global foreground color
     [width]='40'     # Prompt width
+    
     ## PS1
     [b]='blue'       # (K) PWD
     [p1]='\ue0b0'    # Trailing glyph
+    
     ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
     [p]='\uea83'     # Folder glyph
+    
     ### Git
     [gs]=''         # Status line message
     [gb]='\ue725'   # Branch glyph
-    [gd]='\uf444'   # Dotfiles glyph
-    [gg]=''         # If dotfiles [gd] or ''
+    [gd]='\uf444 '  # Dotfiles glyph
+    [gg]=''         # dotfiles ? [gd] : ''
     [gx]='red'      # (K) Working tree changes
     [go]='green'    # (K) Working tree clean
     [gc]=''         # Either [gx] or [go]
+    
     ## RPS1
     [r1]='\ue0b2'   # Leading glyph
+    
     ### Virtual Environment
+    [gv]='left'     # Venv/repo segment placement: 'left', 'right', 'off'
     [gt]='\ue65d'   # Git glyph
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
+    [vt]='icon' # 'icon', 'text', 'icontext' 
+    
     ### System
     [t]='%D{%H:%M}' # Date/Time
     [x]='red'       # (K) Last command error
@@ -82,7 +90,7 @@ _setup_prompt() {
     precmd() {
         dotfiles --zsh-prompt
         _ZZ_PROMPT[gs]=$(git_status_line)
-        [[ ${_ZD[track]} == "1" ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
+        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M vt) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
@@ -104,9 +112,11 @@ _setup_prompt() {
     }
 
     _ps1b() {
+        local _env
+        [[ $(M gv) == left ]] && _env="$(_zvenv)"
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg) $(M gb scale) $(M gs)"\
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg)$_env$(M gb scale) $(M gs)"\
 "$(R)$(F "$(M gc)")$(M p1) %f"
         else
             print -n -- "$(R)$S %f"
@@ -167,10 +177,12 @@ _setup_prompt() {
         print -n -- "$result"
     }
 
-    _rps1a() {
-        local _env
+    # Build the venv / git-repo segment. Placement is controlled by
+    # _ZZ_PROMPT[gv]: 'right' via _rps1a, 'left' embedded in _ps1b, 'off'.
+    _zvenv() {
+        local _env icon path C
         if [[ -n $VIRTUAL_ENV ]]; then
-            local venv C
+            local venv
             venv="${VIRTUAL_ENV%/*}"
             if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
                 C="$(M b)"
@@ -181,18 +193,39 @@ _setup_prompt() {
                 venv=${venv/#$PWD/}
                 venv="${venv/#$HOME/~}"
             fi
-            _env="$(F "$C")$(M r1)"
-            _env+="$(F "$(M f)")$(K "$C")$(M py scale) $venv"
+            icon="$(M py scale)"
+            path="$venv"
         elif [[ -n $(M gs) ]]; then
-            local git_repo git_dir git_depth C
+            local git_repo git_dir git_depth
             git_repo="${_ZD[gitdir]%/}"
             git_dir="${git_repo%/*}"
             git_depth=$(_venv_path "$git_dir")
             git_dir="$git_depth${git_repo##*/}"
             C="$(M b)"
-            _env="$(F "$C")$(M r1)"
-            _env+="$(F "$(M f)")$(K "$C")$(M gt scale) $git_dir"
+            icon="$(M gt scale)"
+            path="$git_dir"
+        else
+            return
         fi
+        local disp
+        case $(M vt) in
+            icon) disp="$icon" ;;
+            text) disp="$path" ;;
+            *)    disp="$icon $path" ;;
+        esac
+        if [[ $(M gv) == left ]]; then
+            # Text only: inherit the surrounding segment's colors, with a
+            # trailing '|' separating it from the following branch.
+            _env="$disp "
+        else
+            _env="$(F "$C")$(M r1)$(F "$(M f)")$(K "$C")$disp "
+        fi
+        print -n -- "$_env"
+    }
+
+    _rps1a() {
+        local _env
+        [[ $(M gv) == right ]] && _env="$(_zvenv)"
         print -n -- "$(R)$_env"
     }
 
