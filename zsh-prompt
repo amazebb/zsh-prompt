@@ -12,7 +12,7 @@ _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
     [f]='white'      # (F) global foreground color
     [width]='40'     # Prompt width
-    [glyphs]='glyph' # 'glyph' (default: use Nerd Fonts) or 'off' (plain text)
+    [nf]='on'        # Use Nerd Fonts 'on' (default) or 'off' (plain text)
     
     ## PS1
     [b]='blue'       # (K) PWD
@@ -53,8 +53,8 @@ _setup_prompt() {
     zmodload zsh/datetime
 
     M(){ 
-        # Suppress Nerd Font glyph keys when [glyphs]=off
-        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+        # Suppress Nerd Font glyph keys when [nf]=off
+        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
             case $1 in
                 p1|h|p|gt|gb|gd|gg|r1|py) return ;;
             esac
@@ -99,9 +99,9 @@ _setup_prompt() {
 
     _ps1a() {
         local p
-        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
             # Plain text: put ~ in the left-truncation marker so it survives
-            # %width<…< truncation (same idea as the home glyph in glyph mode).
+            # %width<…< truncation (same idea as the home glyph in Nerd Font mode).
             if [[ $PWD = "$HOME" ]]; then
                 p="<..<~"
             elif [[ $PWD == $HOME/* ]]; then
@@ -226,7 +226,7 @@ _setup_prompt() {
             return
         fi
         local disp
-        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
             # No icons: always show path text (icon-only would be empty)
             disp="$path"
         else
