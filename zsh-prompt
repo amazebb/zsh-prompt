@@ -12,6 +12,7 @@ _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
     [f]='white'      # (F) global foreground color
     [width]='40'     # Prompt width
+    [glyphs]='glyph' # 'glyph' (default: use Nerd Fonts) or 'off' (plain text)
     
     ## PS1
     [b]='blue'       # (K) PWD
@@ -52,6 +53,12 @@ _setup_prompt() {
     zmodload zsh/datetime
 
     M(){ 
+        # Suppress Nerd Font glyph keys when [glyphs]=off
+        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+            case $1 in
+                p1|h|p|gt|gb|gd|gg|r1|py) return ;;
+            esac
+        fi
         if [[ -n "$KITTY_WINDOW_ID" ]] && [[ $2 == "scale" ]]; then
             print -n -- "%{\e]66;n=6:d=7:v=2:w=1;%}${_ZZ_PROMPT[$1]}%{\a%}"
         else
@@ -92,12 +99,24 @@ _setup_prompt() {
 
     _ps1a() {
         local p
-        if [[ $PWD = "$HOME" ]]; then
-            p="<..< $(M h scale) "
-        elif [[ $PWD == $HOME/* ]]; then 
-            p="< $(M h) ..< $(M h scale) ${PWD#"$HOME"}"
+        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+            # Plain text: put ~ in the left-truncation marker so it survives
+            # %width<…< truncation (same idea as the home glyph in glyph mode).
+            if [[ $PWD = "$HOME" ]]; then
+                p="<..<~"
+            elif [[ $PWD == $HOME/* ]]; then
+                p="<~..<~${PWD#"$HOME"}"
+            else
+                p="<..<$PWD"
+            fi
         else
-            p="< $(M p)  ..< $(M p scale) $PWD"
+            if [[ $PWD = "$HOME" ]]; then
+                p="<..< $(M h scale) "
+            elif [[ $PWD == $HOME/* ]]; then
+                p="< $(M h) ..< $(M h scale) ${PWD#"$HOME"}"
+            else
+                p="< $(M p)  ..< $(M p scale) $PWD"
+            fi
         fi
         if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
             _ZZ_PROMPT[u]="ssh:%n@%m" 
@@ -108,11 +127,14 @@ _setup_prompt() {
     }
 
     _ps1b() {
-        local _env
+        local _env mid
         [[ $(M gv) == left ]] && _env="$(_zvenv)"
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg)$_env$(M gb scale) $(M gs)"\
+            # Icons/env before status; only add a separator space when present
+            mid="$(M gg)$_env$(M gb scale)"
+            [[ -n $mid ]] && mid+=" "
+            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")${mid}$(M gs)"\
 "$(R)$(F "$(M gc)")$(M p1)%f "
         else
             print -n -- "$(R)$S%f "
@@ -204,14 +226,19 @@ _setup_prompt() {
             return
         fi
         local disp
-        case $(M vt) in
-            icon) disp="$icon" ;;
-            text) disp="$path" ;;
-            *)    disp="$icon $path" ;;
-        esac
+        if [[ ${_ZZ_PROMPT[glyphs]:-glyph} == off ]]; then
+            # No icons: always show path text (icon-only would be empty)
+            disp="$path"
+        else
+            case $(M vt) in
+                icon) disp="$icon" ;;
+                text) disp="$path" ;;
+                *)    disp="$icon $path" ;;
+            esac
+        fi
         if [[ $(M gv) == left ]]; then
             # Text only: inherit the surrounding segment's colors, with a
-            # trailing '|' separating it from the following branch.
+            # trailing space separating it from the following branch.
             _env="$disp "
         else
             _env="$(F "$C")$(M r1)$(F "$(M f)")$(K "$C")$disp "
