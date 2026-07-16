@@ -24,6 +24,7 @@ _ZZ_PROMPT=(
     
     ### Git
     [gs]=''         # Status line message
+    [gt]='\ue65d'   # Git glyph
     [gb]='\ue725'   # Branch glyph
     [gd]='\uf444 '  # Dotfiles glyph
     [gg]=''         # dotfiles ? [gd] : ''
@@ -36,10 +37,9 @@ _ZZ_PROMPT=(
     
     ### Virtual Environment
     [gv]='left'     # Venv/repo segment placement: 'left', 'right', 'off'
-    [gt]='\ue65d'   # Git glyph
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
-    [vt]='icon' # 'icon', 'text', 'icontext' 
+    [vt]='icon'     # 'icon', 'text', 'icontext' 
     
     ### System
     [t]='%D{%H:%M}' # Date/Time
@@ -117,9 +117,9 @@ _setup_prompt() {
         S="$(F "$(M b)")$(M p1)"
         if [[ -n $(M gs) ]]; then
             print -n -- "$(K "$(M gc)")$S$(F "$(M f)")$(M gg)$_env$(M gb scale) $(M gs)"\
-"$(R)$(F "$(M gc)")$(M p1) %f"
+"$(R)$(F "$(M gc)")$(M p1)%f "
         else
-            print -n -- "$(R)$S %f"
+            print -n -- "$(R)$S%f "
         fi
     }
 
@@ -232,7 +232,7 @@ _setup_prompt() {
     _rps1b() {
         local s
         s="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(T)"
+        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(M t)"
         print -n -- "$s"
     }
 
