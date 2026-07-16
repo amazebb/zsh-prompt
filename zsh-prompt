@@ -77,10 +77,6 @@ _setup_prompt() {
         print -n -- "$k"
     }
 
-    T() {
-        print -n -- "$(M t)"
-    }
-
     _AT256() {
         [[ $OSTYPE == darwin* ]] && [[ $TERM_PROGRAM == Apple_Terminal ]] \
             && (( ${OSTYPE#darwin} < 25.0 )) 
