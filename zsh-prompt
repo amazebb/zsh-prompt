@@ -118,12 +118,10 @@ _setup_prompt() {
                 p="< $(M p)  ..< $(M p scale) $PWD"
             fi
         fi
-        if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
-            _ZZ_PROMPT[u]="ssh:%n@%m" 
-        else
-            _ZZ_PROMPT[u]=""
-        fi
-        print -n -- "$(K "$(M b)")$(F "$(M f)")$(M u)%$(M width)$p"
+        local _u
+        _u=$(M u)
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="ssh:%n@%m" 
+        print -n -- "$(K "$(M b)")$(F "$(M f)")$_u%$(M width)$p"
     }
 
     _ps1b() {
@@ -178,7 +176,7 @@ _setup_prompt() {
         # the base and PWD. Depths beyond $2 (default 2) collapse to
         # the shorthand "<depth>X../".
         local relative result
-        local -i depth=0 depth_n=${2:-2}
+        local -i depth=0 depth_n=${2:-3}
 
         # Compare by inode (-ef): APFS is case-insensitive by default,
         # so $PWD may differ in case from the git/venv path (e.g. zoxide
@@ -187,9 +185,9 @@ _setup_prompt() {
         [[ "${PWD:${#1}:1}" == / && "${PWD:0:${#1}}" -ef "$1" ]] && relative="${PWD:${#1}+1}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
         if (( depth > depth_n )); then
-            result="${depth}X../"
+            result="-d${depth} "
         else
-            repeat $depth; result+="../"
+            repeat $depth; result+="/"
         fi
 
         print -n -- "$result"
