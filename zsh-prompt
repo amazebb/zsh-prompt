@@ -5,7 +5,7 @@
 # shellcheck disable=SC2140
 
 # Function to set up custom ZSH prompt with git status
-# NOTE: Run `set -x` in the terminal to debug when things go strange! 
+# NOTE: Run `set -x` in the terminal to debug when things go strange!
 
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
@@ -13,16 +13,16 @@ _ZZ_PROMPT=(
     [f]='white'      # (F) global foreground color
     [width]='40'     # Prompt width
     [nf]='on'        # Use Nerd Fonts 'on' (default) or 'off' (plain text)
-    
+
     ## PS1
     [b]='blue'       # (K) PWD
     [p1]='\ue0b0'    # Trailing glyph
-    
+
     ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
     [p]='\uea83'     # Folder glyph
-    
+
     ### Git
     [gs]=''         # Status line message
     [gt]='\ue65d'   # Git glyph
@@ -32,46 +32,82 @@ _ZZ_PROMPT=(
     [gx]='red'      # (K) Working tree changes
     [go]='green'    # (K) Working tree clean
     [gc]=''         # Either [gx] or [go]
-    
+
     ## RPS1
     [r1]='\ue0b2'   # Leading glyph
-    
+
     ### Virtual Environment
     [gv]='left'     # Venv/repo segment placement: 'left', 'right', 'off'
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
-    [vt]='icon'     # 'icon', 'text', 'icontext' 
-    
+    [vt]='icon'     # 'icon', 'text', 'icontext'
+
     ### System
     [t]='%D{%H:%M}' # Date/Time
     [x]='red'       # (K) Last command error
+
+    ### Runtime (set by P; not user config)
+    [k]=''          # Current segment background
 )
 
 _setup_prompt() {
     # Enable command substitution in prompt
     setopt PROMPT_SUBST
     zmodload zsh/datetime
-
-    M(){ 
+    
+    M(){
         # Suppress Nerd Font glyph keys when [nf]=off
         if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
             case $1 in
                 p1|h|p|gt|gb|gd|gg|r1|py) return ;;
             esac
         fi
-        if [[ -n "$KITTY_WINDOW_ID" ]] && [[ $2 == "scale" ]]; then
-            print -n -- "%{\e]66;n=6:d=7:v=2:w=1;%}${_ZZ_PROMPT[$1]}%{\a%}"
-        else
-            print -n -- "${_ZZ_PROMPT[$1]}"
-        fi
+        print -n -- "${_ZZ_PROMPT[$1]}"
     }
 
+    # Foreground / background colour from a _ZZ_PROMPT key (calls M).
+    # Usage: $(F f)  $(K b)
     F() {
-        print -r -- "%{%F{$1}%}"
+        print -nr -- "%{%F{$(M "$1")}%}"
     }
 
     K() {
-        print -r -- "%{%K{$1}%}"
+        print -nr -- "%{%K{$(M "$1")}%}"
+    }
+
+    # Powerline segment chrome. Must run in the parent shell (not $(P …))
+    # so that [k] is updated for the next segment. Appends to $_ZZ_OUT
+    # (reset by _ps1 / _rps1 before building).
+    #
+    #   P <bg> <fg_key>   open/continue: K(bg) F(fg); [k]=bg
+    #   P <bg> trail      PS1 sep:       K(bg) F([k]) p1 F(f); [k]=bg
+    #   P <bg> lead       RPS1 sep:      F(bg) r1 F(f) K(bg); [k]=bg
+    typeset -g _ZZ_OUT
+
+    P() {
+        local bg=$1 mode=$2
+        case $mode in
+            trail)
+                _ZZ_OUT+="$(K "$bg")$(F "${_ZZ_PROMPT[k]}")$(M p1)$(F f)"
+                ;;
+            lead)
+                _ZZ_OUT+="$(F "$bg")$(M r1)$(F f)$(K "$bg")"
+                ;;
+            init)
+                _ZZ_OUT=$(R)
+                _ZZ_PROMPT[k]=
+                [[ $1 == "ps1" ]] && P b f && bg="b"
+                ;;
+            close)
+                [[ $1 == "ps1" ]] && PS1="$_ZZ_OUT$(R)$(F "${_ZZ_PROMPT[k]}")$(M p1)%f " || RPS1=$_ZZ_OUT
+                bg=
+                ;;
+            *)
+                # mode is a foreground colour key
+                _ZZ_OUT+="$(K "$bg")$(F "$mode")"
+                ;;
+        esac
+        _ZZ_PROMPT[k]="$bg"
     }
 
     R() {
@@ -86,18 +122,25 @@ _setup_prompt() {
 
     _AT256() {
         [[ $OSTYPE == darwin* ]] && [[ $TERM_PROGRAM == Apple_Terminal ]] \
-            && (( ${OSTYPE#darwin} < 25.0 )) 
+            && (( ${OSTYPE#darwin} < 25.0 ))
     }
 
     # Update Git status before each prompt
     precmd() {
         dotfiles --zsh-prompt
-        _ZZ_PROMPT[gs]=$(git_status_line)
+        _ZZ_PROMPT[gs]=$(_git_status_line)
         [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M vt) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
-    _ps1a() {
+    _sec_user() {
+        local _u
+        _u=$(M u)
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="ssh:%n@%m"
+        _ZZ_OUT+="$_u"
+    }
+
+    _sec_pwd() {
         local p
         if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
             # Plain text: put ~ in the left-truncation marker so it survives
@@ -111,61 +154,97 @@ _setup_prompt() {
             fi
         else
             if [[ $PWD = "$HOME" ]]; then
-                p="<..< $(M h scale) "
+                p="<..< $(M h) "
             elif [[ $PWD == $HOME/* ]]; then
-                p="< $(M h) ..< $(M h scale) ${PWD#"$HOME"}"
+                p="< $(M h) ..< $(M h) ${PWD#"$HOME"}"
             else
-                p="< $(M p)  ..< $(M p scale) $PWD"
+                p="< $(M p)  ..< $(M p) $PWD"
             fi
         fi
-        local _u
-        _u=$(M u)
-        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="ssh:%n@%m" 
-        print -n -- "$(K "$(M b)")$(F "$(M f)")$_u%$(M width)$p"
+        _ZZ_OUT+="%$(M width)$p"
     }
 
-    _ps1b() {
-        local _env mid
-        [[ $(M gv) == left ]] && _env="$(_zvenv)"
-        S="$(F "$(M b)")$(M p1)"
-        if [[ -n $(M gs) ]]; then
-            # Icons/env before status; only add a separator space when present
-            mid="$(M gg)$_env$(M gb scale)"
-            [[ -n $mid ]] && mid+=" "
-            print -n -- "$(K "$(M gc)")$S$(F "$(M f)")${mid}$(M gs)"\
-"$(R)$(F "$(M gc)")$(M p1)%f "
+    # Git identity icons (dotfiles glyph + branch glyph).
+    _sec_vcs() {
+        local vc_status
+        vc_status="$(M gg)$(_sec_git_folder)$(M gb)"
+        [[ -n $vc_status ]] && vc_status+=" $(M gs)"
+        _ZZ_OUT+="$vc_status"
+    }
+
+    # Git status text (+N ~N ?N / branch info from dotfiles).
+    _sec_git_status() {
+        _ZZ_OUT+="$(M gs)"
+    }
+
+    # Venv / git-repo path. Sets globals (call in parent shell, not $(…)):
+    #   _ZZ_SEG_TEXT – display text (trailing space)
+    #   _ZZ_SEG_BG   – colour key for P … lead (b / cv)
+    typeset -g _ZZ_SEG_TEXT _ZZ_SEG_BG
+
+    _sec_venv() {
+        _ZZ_SEG_TEXT=
+        _ZZ_SEG_BG=
+        if [[ -z $VIRTUAL_ENV ]]; then
+            return
+        fi
+   
+        local venv icon path C disp
+        venv="${VIRTUAL_ENV%/*}"
+        if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
+            C=b
+            venv=$(_venv_path "$venv")
+            venv="$venv${VIRTUAL_ENV##*/}"
         else
-            print -n -- "$(R)$S%f "
+            C=cv
+            venv=${venv/#$PWD/}
+            venv="${venv/#$HOME/~}"
         fi
-    }
-
-    # Build left prompt
-    _ps1() {
-        PS1="$(_ps1a)$(_ps1b)"
-    }
-
-    # Git status line wrapper - uses dotfiles if available, otherwise git_stline
-    git_status_line() {
-        if (($+functions[dotfiles])); then
-            echo "${_ZD[prompt]}"
+        icon="$(M py)"
+        path="$venv"
+        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
+            disp="$path"
         else
-            git_stline
+            case $(M vt) in
+                icon) disp="$icon" ;;
+                text) disp="$path" ;;
+                *)    disp="$icon $path" ;;
+            esac
         fi
+        _ZZ_SEG_BG=$C
+        _ZZ_SEG_TEXT="$disp "
     }
 
-    # Fallback git status line for standard git repos
-    git_stline() {
-        local p
-        if [[ -n $porcelain ]]; then
-            local -i s=0
-            s=$(echo "$porcelain" | grep -c "^[MTADRC]")
-            ((s)) && p+=" +$s" # staged
-            s=$(echo "$porcelain" | grep -c "^.[MTDRC]")
-            ((s)) && p+=" ~$s" # unstaged
-            s=$(echo "$porcelain" | grep -c "^??")
-            ((s)) && p+=" ?$s" # untracked
+    _sec_git_folder (){
+        local icon path C disp git_repo git_dir git_depth
+        # _ZZ_SEG_TEXT=
+       
+        git_repo="${_ZD[gitdir]%/}"
+        git_dir="${git_repo%/*}"
+        git_depth=$(_venv_path "$git_dir")
+        git_dir="$git_depth${git_repo##*/}"
+        C=b
+        icon="$(M gt)"
+        path="$git_dir"
+        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
+            disp="$path"
+        else
+            case $(M vt) in
+                icon) disp="$icon" ;;
+                text) disp="$path" ;;
+                *)    disp="$icon $path" ;;
+            esac
         fi
-        echo "$p"
+        print -nr -- "$disp "
+    }
+
+    # Clock + exit-status colours (leading glyph + background).
+    _sec_time() {
+        local s
+        s="%(?.$(F go).$(F x))$(M r1)"
+        s+="$(F f)%(?.$(K go).$(K x))$(M t)"
+        _ZZ_OUT+="$s"
+        # print -n -- "$s"
     }
 
     _venv_path() {
@@ -193,72 +272,61 @@ _setup_prompt() {
         print -n -- "$result"
     }
 
-    # Build the venv / git-repo segment. Placement is controlled by
-    # _ZZ_PROMPT[gv]: 'right' via _rps1a, 'left' embedded in _ps1b, 'off'.
-    _zvenv() {
-        local _env icon path C
-        if [[ -n $VIRTUAL_ENV ]]; then
-            local venv
-            venv="${VIRTUAL_ENV%/*}"
-            if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
-                C="$(M b)"
-                venv=$(_venv_path "$venv")
-                venv="$venv${VIRTUAL_ENV##*/}"
-            else
-                C="$(M cv)"
-                venv=${venv/#$PWD/}
-                venv="${venv/#$HOME/~}"
-            fi
-            icon="$(M py scale)"
-            path="$venv"
-        elif [[ -n $(M gs) ]]; then
-            local git_repo git_dir git_depth
-            git_repo="${_ZD[gitdir]%/}"
-            git_dir="${git_repo%/*}"
-            git_depth=$(_venv_path "$git_dir")
-            git_dir="$git_depth${git_repo##*/}"
-            C="$(M b)"
-            icon="$(M gt scale)"
-            path="$git_dir"
+    # Git status line wrapper - uses dotfiles if available, otherwise _git_stline
+    _git_status_line() {
+        if (($+functions[dotfiles])); then
+            echo "${_ZD[prompt]}"
         else
-            return
+            _git_stline
         fi
-        local disp
-        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
-            # No icons: always show path text (icon-only would be empty)
-            disp="$path"
-        else
-            case $(M vt) in
-                icon) disp="$icon" ;;
-                text) disp="$path" ;;
-                *)    disp="$icon $path" ;;
-            esac
-        fi
-        if [[ $(M gv) == left ]]; then
-            # Text only: inherit the surrounding segment's colors, with a
-            # trailing space separating it from the following branch.
-            _env="$disp "
-        else
-            _env="$(F "$C")$(M r1)$(F "$(M f)")$(K "$C")$disp "
-        fi
-        print -n -- "$_env"
     }
 
-    _rps1a() {
-        local _env
-        [[ $(M gv) == right ]] && _env="$(_zvenv)"
-        print -n -- "$(R)$_env"
+    # Fallback git status line for standard git repos
+    _git_stline() {
+        local p
+        if [[ -n $porcelain ]]; then
+            local -i s=0
+            s=$(echo "$porcelain" | grep -c "^[MTADRC]")
+            ((s)) && p+=" +$s" # staged
+            s=$(echo "$porcelain" | grep -c "^.[MTDRC]")
+            ((s)) && p+=" ~$s" # unstaged
+            s=$(echo "$porcelain" | grep -c "^??")
+            ((s)) && p+=" ?$s" # untracked
+        fi
+        echo "$p"
     }
 
-    _rps1b() {
-        local s
-        s="%(?.$(F "$(M go)").$(F "$(M x)"))$(M r1)"
-        s+="$(F "$(M f)")%(?.$(K "$(M go)").$(K "$(M x)"))$(M t)"
-        print -n -- "$s"
+    _sec_vcs_iff() {
+        [[ -z $(M gs) ]] && return
+        if [[ $(M gv) == "$1" ]]; then
+            P gc trail
+            _sec_vcs
+        fi
     }
 
+    # Left: user + pwd, then git 
+    _ps1() {
+        P ps1 init
+        _sec_user
+        _sec_pwd
+        _sec_vcs_iff left
+        P ps1 close
+    }
+
+    # Right: optional venv/repo (lead), then time + exit status.
     _rps1() {
-        RPS1="$(_rps1a)$(_rps1b)"
+        P rps1 init
+
+        if [[ $(M gv) == right ]]; then
+            _sec_venv
+            if [[ -n $_ZZ_SEG_TEXT ]]; then
+                P "$_ZZ_SEG_BG" lead
+                _ZZ_OUT+=$_ZZ_SEG_TEXT
+            fi
+        fi
+
+        _sec_time
+        P rps1 close
     }
 
     _time_ps1() {
@@ -274,6 +342,7 @@ _setup_prompt() {
     }
 
     # Final hook to update prompt
+    # Note: to timeeach section use (_time_ps1 _time_rps1)
     precmd_functions=(_ps1 _rps1)
 }
 
