@@ -18,6 +18,9 @@ _ZZ_PROMPT=(
     [b]='blue'       # (K) PWD
     [p1]='\ue0b0'    # Trailing glyph
 
+    ## RPS1
+    [r1]='\ue0b2'   # Leading glyph
+
     ### Home
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME glyph
@@ -28,19 +31,19 @@ _ZZ_PROMPT=(
     [gt]='\ue65d'   # Git glyph
     [gb]='\ue725'   # Branch glyph
     [gd]='\uf444 '  # Dotfiles glyph
-    [gg]=''         # dotfiles ? [gd] : ''
+    [gg]=''         # dotfiles ? [gd] : '': not user config
     [gx]='red'      # (K) Working tree changes
     [go]='green'    # (K) Working tree clean
-    [gc]=''         # Either [gx] or [go]
-
-    ## RPS1
-    [r1]='\ue0b2'   # Leading glyph
-
+    [gc]=''         # Either [gx] or [go]: not user config
+    [gv]='left'     # Repo segment placement: 'left', 'right', 'off'
+    [ga]='icon'     # 'icon', 'text', 'icontext'
+    
     ### Virtual Environment
-    [gv]='left'     # Venv/repo segment placement: 'left', 'right', 'off'
+    [vo]='left'     # Venv segment placement: 'left', 'right', 'off'
     [py]='\ue606'   # Python glyph
     [cv]='magenta'  # (K) Outside project folder
     [vt]='icon'     # 'icon', 'text', 'icontext'
+    [vv]=''         # b or cv: not user config
 
     ### System
     [t]='%D{%H:%M}' # Date/Time
@@ -48,6 +51,7 @@ _ZZ_PROMPT=(
 
     ### Runtime (set by P; not user config)
     [k]=''          # Current segment background
+    [xs]=0          # Color to use based on exit status: go or x 
 )
 
 _setup_prompt() {
@@ -57,7 +61,7 @@ _setup_prompt() {
     
     M(){
         # Suppress Nerd Font glyph keys when [nf]=off
-        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
+        if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             case $1 in
                 p1|h|p|gt|gb|gd|gg|r1|py) return ;;
             esac
@@ -65,17 +69,17 @@ _setup_prompt() {
         print -n -- "${_ZZ_PROMPT[$1]}"
     }
 
-    # Foreground / background colour from a _ZZ_PROMPT key (calls M).
-    # Usage: $(F f)  $(K b)
+    # Foreground from _ZZ_PROMPT key (calls M).
     F() {
         print -nr -- "%{%F{$(M "$1")}%}"
     }
 
+    # Background from _ZZ_PROMPT key (calls M).
     K() {
         print -nr -- "%{%K{$(M "$1")}%}"
     }
 
-    # Powerline segment chrome. Must run in the parent shell (not $(P …))
+    # Segment painter, must run in the parent shell (not $(P …))
     # so that [k] is updated for the next segment. Appends to $_ZZ_OUT
     # (reset by _ps1 / _rps1 before building).
     #
@@ -86,12 +90,13 @@ _setup_prompt() {
 
     P() {
         local bg=$1 mode=$2
-        case $mode in
+        case ${mode:-lead} in
             trail)
-                _ZZ_OUT+="$(K "$bg")$(F "${_ZZ_PROMPT[k]}")$(M p1)$(F f)"
+                _ZZ_OUT+="$(K "$bg"; F "${_ZZ_PROMPT[k]}"; M p1; F f)"
                 ;;
             lead)
-                _ZZ_OUT+="$(F "$bg")$(M r1)$(F f)$(K "$bg")"
+                (( $# == 1 )) && bg="${_ZZ_PROMPT[xs]}"
+                _ZZ_OUT+="$(F "$bg"; M r1; F f; K "$bg")"
                 ;;
             init)
                 _ZZ_OUT=$(R)
@@ -99,12 +104,12 @@ _setup_prompt() {
                 [[ $1 == "ps1" ]] && P b f && bg="b"
                 ;;
             close)
-                [[ $1 == "ps1" ]] && PS1="$_ZZ_OUT$(R)$(F "${_ZZ_PROMPT[k]}")$(M p1)%f " || RPS1=$_ZZ_OUT
+                [[ $1 == "ps1" ]] && PS1="$_ZZ_OUT$(R; F "${_ZZ_PROMPT[k]}"; M p1)%f " || RPS1=$_ZZ_OUT
                 bg=
                 ;;
             *)
                 # mode is a foreground colour key
-                _ZZ_OUT+="$(K "$bg")$(F "$mode")"
+                _ZZ_OUT+="$(K "$bg"; F "$mode")"
                 ;;
         esac
         _ZZ_PROMPT[k]="$bg"
@@ -129,7 +134,7 @@ _setup_prompt() {
     precmd() {
         dotfiles --zsh-prompt
         _ZZ_PROMPT[gs]=$(_git_status_line)
-        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M vt) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
+        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M ga) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
@@ -142,7 +147,7 @@ _setup_prompt() {
 
     _sec_pwd() {
         local p
-        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
+        if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             # Plain text: put ~ in the left-truncation marker so it survives
             # %width<…< truncation (same idea as the home glyph in Nerd Font mode).
             if [[ $PWD = "$HOME" ]]; then
@@ -164,98 +169,74 @@ _setup_prompt() {
         _ZZ_OUT+="%$(M width)$p"
     }
 
-    # Git identity icons (dotfiles glyph + branch glyph).
-    _sec_vcs() {
-        local vc_status
-        vc_status="$(M gg)$(_sec_git_folder)$(M gb)"
-        [[ -n $vc_status ]] && vc_status+=" $(M gs)"
-        _ZZ_OUT+="$vc_status"
+    # Git: glyph + git folder + branch glyph + changes
+    _vcs() {
+        _ZZ_OUT+="$(M gg; _git_folder; M gb) ${_ZZ_PROMPT[gs]}"
     }
 
-    # Git status text (+N ~N ?N / branch info from dotfiles).
-    _sec_git_status() {
-        _ZZ_OUT+="$(M gs)"
+    # Venv path 
+    _venv() {
+        _ZZ_OUT+="$_ZZ_VENV_TEXT"
     }
 
-    # Venv / git-repo path. Sets globals (call in parent shell, not $(…)):
-    #   _ZZ_SEG_TEXT – display text (trailing space)
-    #   _ZZ_SEG_BG   – colour key for P … lead (b / cv)
-    typeset -g _ZZ_SEG_TEXT _ZZ_SEG_BG
+    typeset -g _ZZ_VENV_TEXT
 
-    _sec_venv() {
-        _ZZ_SEG_TEXT=
-        _ZZ_SEG_BG=
-        if [[ -z $VIRTUAL_ENV ]]; then
-            return
-        fi
-   
-        local venv icon path C disp
+    _venv_pre() {
+        _ZZ_VENV_TEXT=
+        [[ -z $VIRTUAL_ENV || ${_ZZ_PROMPT[vo]} == "off" ]] && return
+       
+        local venv 
         venv="${VIRTUAL_ENV%/*}"
         if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
-            C=b
+            _ZZ_PROMPT[vv]=b
             venv=$(_venv_path "$venv")
             venv="$venv${VIRTUAL_ENV##*/}"
         else
-            C=cv
+            _ZZ_PROMPT[vv]=cv
             venv=${venv/#$PWD/}
             venv="${venv/#$HOME/~}"
         fi
-        icon="$(M py)"
-        path="$venv"
-        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
-            disp="$path"
-        else
-            case $(M vt) in
-                icon) disp="$icon" ;;
-                text) disp="$path" ;;
-                *)    disp="$icon $path" ;;
-            esac
-        fi
-        _ZZ_SEG_BG=$C
-        _ZZ_SEG_TEXT="$disp "
+        _ZZ_VENV_TEXT="$(_disp_type "$venv" "$(M py)" "${_ZZ_PROMPT[vt]}")"
     }
 
-    _sec_git_folder (){
-        local icon path C disp git_repo git_dir git_depth
-        # _ZZ_SEG_TEXT=
+    _git_folder (){
+        local repo dir depth
        
-        git_repo="${_ZD[gitdir]%/}"
-        git_dir="${git_repo%/*}"
-        git_depth=$(_venv_path "$git_dir")
-        git_dir="$git_depth${git_repo##*/}"
-        C=b
-        icon="$(M gt)"
-        path="$git_dir"
-        if [[ ${_ZZ_PROMPT[nf]:-on} == off ]]; then
-            disp="$path"
+        repo="${_ZD[gitdir]%/}"
+        dir="${repo%/*}"
+        depth=$(_venv_path "$dir")
+        dir="$depth${repo##*/}"
+
+        _disp_type "$git_path" "$(M gt)" "${_ZZ_PROMPT[ga]}"
+    }
+
+    _disp_type() {
+        if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
+            disp="$1"
         else
-            case $(M vt) in
-                icon) disp="$icon" ;;
-                text) disp="$path" ;;
-                *)    disp="$icon $path" ;;
+            case $3 in
+                icon) disp="$2" ;;
+                text) disp="$1" ;;
+                icontext) disp="$2 $1" ;;
             esac
         fi
         print -nr -- "$disp "
     }
 
-    # Clock + exit-status colours (leading glyph + background).
+    # Clock 
     _sec_time() {
-        local s
-        s="%(?.$(F go).$(F x))$(M r1)"
-        s+="$(F f)%(?.$(K go).$(K x))$(M t)"
-        _ZZ_OUT+="$s"
-        # print -n -- "$s"
+        _ZZ_OUT+="$(M t)"
     }
 
     _venv_path() {
-        # Calculate relative path from $1 to current directory as "../"
+        # Calculate relative path from $1 to given directory as "/"
         # notation.
         # Given a base path (Python venv or .git/), returns
-        # a string of "../" repeated for each directory level between
+        # a string of "/" repeated for each directory level between
         # the base and PWD. Depths beyond $2 (default 2) collapse to
-        # the shorthand "<depth>X../".
+        # the shorthand "-d<depth>".
         local relative result
-        local -i depth=0 depth_n=${2:-3}
+        local -i depth=0 depth_n=${2:-2}
 
         # Compare by inode (-ef): APFS is case-insensitive by default,
         # so $PWD may differ in case from the git/venv path (e.g. zoxide
@@ -272,7 +253,7 @@ _setup_prompt() {
         print -n -- "$result"
     }
 
-    # Git status line wrapper - uses dotfiles if available, otherwise _git_stline
+    # Git status - uses dotfiles if available, otherwise _git_stline
     _git_status_line() {
         if (($+functions[dotfiles])); then
             echo "${_ZD[prompt]}"
@@ -297,18 +278,39 @@ _setup_prompt() {
     }
 
     _sec_vcs_iff() {
-        [[ -z $(M gs) ]] && return
-        if [[ $(M gv) == "$1" ]]; then
+        [[ -z ${_ZZ_PROMPT[gs]} ]] && return
+        if [[ $1 == "left" && ${_ZZ_PROMPT[gv]} == "left" ]]; then
             P gc trail
-            _sec_vcs
+            _vcs
         fi
     }
+
+    _sec_venv_iff() {
+        [[ -z $VIRTUAL_ENV || ${_ZZ_PROMPT[vo]} == "off" ]] && return
+        if [[ $1 == "left" && ${_ZZ_PROMPT[vo]} == "left" ]]; then
+            P "${_ZZ_PROMPT[vv]}" trail
+            _venv
+        elif [[ $1 == "right" && ${_ZZ_PROMPT[vo]} == "right" ]]; then
+            P "${_ZZ_PROMPT[vv]}" lead
+            _venv
+        fi
+    }
+
+    _last_exit_status() {
+        _ZZ_PROMPT[xs]=$? 
+        if (( _ZZ_PROMPT[xs] == 0 )); then
+            _ZZ_PROMPT[xs]="go"
+        else
+            _ZZ_PROMPT[xs]="x"
+        fi
+ }
 
     # Left: user + pwd, then git 
     _ps1() {
         P ps1 init
         _sec_user
         _sec_pwd
+        _sec_venv_iff left
         _sec_vcs_iff left
         P ps1 close
     }
@@ -316,15 +318,8 @@ _setup_prompt() {
     # Right: optional venv/repo (lead), then time + exit status.
     _rps1() {
         P rps1 init
-
-        if [[ $(M gv) == right ]]; then
-            _sec_venv
-            if [[ -n $_ZZ_SEG_TEXT ]]; then
-                P "$_ZZ_SEG_BG" lead
-                _ZZ_OUT+=$_ZZ_SEG_TEXT
-            fi
-        fi
-
+        _sec_venv_iff right
+        P lead
         _sec_time
         P rps1 close
     }
@@ -332,18 +327,18 @@ _setup_prompt() {
     _time_ps1() {
         local start=$EPOCHREALTIME
         _ps1
-        printf "PS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) >&2
+        printf "PS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) 
     }
 
     _time_rps1() {
-        local start=$EPOCHREALTIME
+        local start=$EPOCHREALTIME stop 
         _rps1
-        printf "RPS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) >&2
+        printf "RPS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 ))
     }
 
     # Final hook to update prompt
     # Note: to timeeach section use (_time_ps1 _time_rps1)
-    precmd_functions=(_ps1 _rps1)
+    precmd_functions=(_venv_pre _last_exit_status _ps1 _rps1)
 }
 
 _chpwd_update() {
