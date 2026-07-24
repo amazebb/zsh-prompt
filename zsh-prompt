@@ -207,7 +207,7 @@ _setup_prompt() {
         depth=$(_venv_path "$dir")
         dir="$depth${repo##*/}"
 
-        _disp_type "$git_path" "$(M gt)" "${_ZZ_PROMPT[ga]}"
+        _disp_type "$dir" "$(M gt)" "${_ZZ_PROMPT[ga]}"
     }
 
     _disp_type() {
