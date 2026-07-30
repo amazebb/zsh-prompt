@@ -142,7 +142,7 @@ _setup_prompt() {
     _sec_user() {
         local _u
         _u=$(M u)
-        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="$(M ssh)ssh:%n@%m"
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="$(M ssh) ssh:%n@%m"
         _ZZ_OUT+="$_u"
     }
 
