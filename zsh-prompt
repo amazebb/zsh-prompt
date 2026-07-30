@@ -25,7 +25,7 @@ _ZZ_PROMPT=(
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME
     [p]='\uea83'     # Folder
-    [ssh]='\ue8b1'   # Ssh
+    [ssh]='\ue8b1 \U000f08c0'   # Ssh
  
     ### Git
     [gs]=''         # Status line message
@@ -64,7 +64,8 @@ _setup_prompt() {
         # Suppress Nerd Font glyph keys when [nf]=off
         if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             case $1 in
-                p1|h|p|gt|gb|gd|gg|r1|py|ssh) return ;;
+                p1|h|p|gt|gb|gd|gg|r1|py) return ;;
+                ssh) print -n -- "ssh" ;;
             esac
         fi
         print -n -- "${_ZZ_PROMPT[$1]}"
@@ -142,7 +143,7 @@ _setup_prompt() {
     _sec_user() {
         local _u
         _u=$(M u)
-        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="$(M ssh) ssh:%n@%m"
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="$(M ssh):%n@%m"
         _ZZ_OUT+="$_u"
     }
 
