@@ -25,7 +25,7 @@ _ZZ_PROMPT=(
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME
     [p]='\uea83'     # Folder
-    [ssh]='\ue8b1 \U000f08c0'   # Ssh
+    [ssh]='\ue8b1 \U000f08c0 '   # Ssh
  
     ### Git
     [gs]=''         # Status line message
