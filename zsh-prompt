@@ -65,7 +65,7 @@ _setup_prompt() {
         if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             case $1 in
                 p1|h|p|gt|gb|gd|gg|r1|py) return ;;
-                ssh) print -n -- "ssh" ;;
+                ssh) print -n -- "ssh"; return ;;
             esac
         fi
         print -n -- "${_ZZ_PROMPT[$1]}"
