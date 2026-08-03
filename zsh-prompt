@@ -173,7 +173,7 @@ _setup_prompt() {
 
     # Git: glyph + git folder + branch glyph + changes
     _vcs() {
-        _ZZ_OUT+="$(M gg; _git_folder; M gb) ${_ZZ_PROMPT[gs]}"
+        _ZZ_OUT+=" $(M gg; _git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
     }
 
     # Venv path 
