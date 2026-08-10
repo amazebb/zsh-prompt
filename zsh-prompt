@@ -136,8 +136,8 @@ _setup_prompt() {
     precmd() {
         dotfiles --zsh-prompt
         _ZZ_PROMPT[gs]=$(_git_status_line)
-        # One git indicator: e5fb when tracked dotfiles and (not left repo / icon mode), else e65d
-        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M ga) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
+        # One git indicator: select correct git glyph based on whether normal git folder or dotfile bare repo. 
+        [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
