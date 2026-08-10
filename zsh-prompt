@@ -31,8 +31,8 @@ _ZZ_PROMPT=(
     [gs]=''         # Status line message
     [gt]='\ue65d'   # Git glyph
     [gb]='\ue725'   # Branch glyph
-    [gd]='\uf444 '  # Dotfiles glyph
-    [gg]=''         # dotfiles ? [gd] : '': not user config
+    [gd]='\ue5fb'   # Git glyph (dotfiles folder)
+    [gg]=''         # computed: [gd] if track else [gt]
     [gx]='red'      # (K) Working tree changes
     [go]='green'    # (K) Working tree clean
     [gc]=''         # Either [gx] or [go]: not user config
@@ -136,7 +136,8 @@ _setup_prompt() {
     precmd() {
         dotfiles --zsh-prompt
         _ZZ_PROMPT[gs]=$(_git_status_line)
-        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M ga) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=''
+        # One git indicator: e5fb when tracked dotfiles and (not left repo / icon mode), else e65d
+        [[ ${_ZD[track]} == "1" && ( $(M gv) != left || $(M ga) == icon ) ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
         [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
@@ -173,7 +174,7 @@ _setup_prompt() {
 
     # Git: glyph + git folder + branch glyph + changes
     _vcs() {
-        _ZZ_OUT+=" $(M gg; _git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
+        _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
     }
 
     # Venv path 
@@ -209,7 +210,7 @@ _setup_prompt() {
         depth=$(_venv_path "$dir")
         dir="$depth${repo##*/}"
 
-        _disp_type "$dir" "$(M gt)" "${_ZZ_PROMPT[ga]}"
+        _disp_type "$dir" "$(M gg)" "${_ZZ_PROMPT[ga]}"
     }
 
     _disp_type() {
