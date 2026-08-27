@@ -10,7 +10,7 @@ indicators.
 
 ```zsh
 mkdir -p $HOME/.local/share
-git clone https://github.com/broeknbytes/zsh-prompt.git $HOME/.local/share/zsh/prompt
+git clone https://github.com/amazebb/zsh-prompt.git $HOME/.local/share/zsh/prompt
 ```
 
 Add to your .zshrc if not already:
@@ -39,7 +39,7 @@ The entire implementation lives in `zsh-prompt` (a shell script, not a Zsh plugi
 
 ## External Dependencies
 
-Single dependency [dotfiles](https://github.com/broeknbytes/dotfiles.git) 
+Single dependency [dotfiles](https://github.com/amazebb/dotfiles.git)
 
 - `dotfiles --zsh-prompt`: Populates `_ZD[prompt]` (git status) and `_ZD[gitdir]` (repo path). If unavailable, falls back to `git_stline()` which parses `$porcelain` (expected to be git porcelain output).
 - `_ZD` associative array: Set externally by the `dotfiles` command; keys used are `[prompt]`, `[gitdir]`, `[track]`.
