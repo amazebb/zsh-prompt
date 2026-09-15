@@ -19,6 +19,24 @@ Add to your .zshrc if not already:
 echo '[[ -f $HOME/.local/share/zsh/prompt/zsh-prompt ]] && source $HOME/.local/share/zsh/prompt/zsh-prompt' >> ~/.zshrc
 ```
 
+### SSH
+
+Terminal.app on macOS 15 and earlier brightens coloured text drawn on the
+default background; `R()` works around it. Over ssh the remote can't see the
+local terminal, so the prompt exports `LC_OS` and `LC_TERM_PROGRAM` locally
+and relies on ssh to forward them.
+
+Apple's `/usr/bin/ssh` and sshd already forward `LC_*`. Other clients, such as
+Homebrew's OpenSSH, need this in `~/.ssh/config`:
+
+```
+Host *
+    SendEnv LANG LC_*
+```
+
+The remote sshd must have `AcceptEnv LANG LC_*` (the macOS default, in
+`/etc/ssh/sshd_config.d/100-macos.conf`).
+
 ### Screenshots
 An example of what the Zsh prompt looks like in action
 
