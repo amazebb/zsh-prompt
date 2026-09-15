@@ -127,9 +127,13 @@ _setup_prompt() {
         print -n -- "$k"
     }
 
+    # Client OS/terminal, forwarded over ssh via SendEnv/AcceptEnv LANG LC_*
+    # so _AT256 reflects the local Terminal.app, not the remote host.
+    [[ -z $SSH_TTY ]] && export LC_OS=$OSTYPE LC_TERM_PROGRAM=$TERM_PROGRAM
+
     _AT256() {
-        [[ $OSTYPE == darwin* ]] && [[ $TERM_PROGRAM == Apple_Terminal ]] \
-            && (( ${OSTYPE#darwin} < 25.0 ))
+        [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS == darwin* ]] \
+            && (( ${LC_OS#darwin} < 25.0 ))
     }
 
     # Update Git status before each prompt
