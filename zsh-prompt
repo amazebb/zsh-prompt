@@ -10,12 +10,12 @@
 typeset -gA _ZZ_PROMPT
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
-    [f]='white'      # (F) global foreground color
+    [f]='#ffffff'    # (F) global foreground color
     [width]='40'     # Prompt width
     [nf]='on'        # Use Nerd Fonts 'on' (default) or 'off' (plain text)
 
     ## PS1
-    [b]='blue'       # (K) PWD
+    [b]='#0064e4'    # (K) PWD
     [p1]='\ue0b4'    # Trailing divider
 
     ## RPS1
@@ -33,8 +33,8 @@ _ZZ_PROMPT=(
     [gb]='\ue725'   # Branch glyph
     [gd]='\ue5fb'   # Git glyph (dotfiles folder)
     [gg]=''         # computed: [gd] if track else [gt]
-    [gx]='red'      # (K) Working tree changes
-    [go]='green'    # (K) Working tree clean
+    [gx]='#d6000c'  # (K) Working tree changes
+    [go]='#008400'  # (K) Working tree clean
     [gc]=''         # Either [gx] or [go]: not user config
     [gv]='left'     # Repo segment placement: 'left', 'right', 'off'
     [ga]='icon'     # 'icon', 'text', 'icontext'
@@ -42,13 +42,13 @@ _ZZ_PROMPT=(
     ### Virtual Environment
     [vo]='left'     # Venv segment placement: 'left', 'right', 'off'
     [py]='\ue606'   # Python glyph
-    [cv]='magenta'  # (K) Outside project folder
+    [cv]='#c7008b'  # (K) Outside project folder
     [vt]='icon'     # 'icon', 'text', 'icontext'
     [vv]=''         # b or cv: not user config
 
     ### System
     [t]='%D{%H:%M}' # Date/Time
-    [x]='red'       # (K) Last command error
+    [x]='#d6000c'   # (K) Last command error
 
     ### Runtime (set by P; not user config)
     [k]=''          # Current segment background
@@ -135,6 +135,9 @@ _setup_prompt() {
         [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS == darwin* ]] \
             && (( ${LC_OS#darwin} < 25.0 ))
     }
+
+    # Map '#rrggbb' colours to the nearest 256-colour index where there is no truecolor.
+    _AT256 && zmodload zsh/nearcolor
 
     # Update Git status before each prompt
     precmd() {
