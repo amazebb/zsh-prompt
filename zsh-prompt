@@ -8,6 +8,7 @@
 # NOTE: Run `set -x` in the terminal to debug when things go strange!
 
 typeset -gA _ZZ_PROMPT
+typeset -gA _ZD  # Git info: set by dotfiles, or by _git_stline without it
 _ZZ_PROMPT=(
     # Prompt (colors: K=background, F=foreground)
     [f]='#ffffff'    # (F) global foreground color
@@ -136,6 +137,7 @@ _setup_prompt() {
         #
         # https://apple.stackexchange.com/questions/282911/
         # prevent-mac-terminal-brightening-font-color-with-no-background/446604#446604
+        local k
         _AT256 && k="%k%{\e[48;5;256m%}" || k='%k'
         print -n -- "$k"
     }
@@ -154,8 +156,12 @@ _setup_prompt() {
 
     # Update Git status before each prompt
     _git_pre() {
-        dotfiles --zsh-prompt
-        _esc "$(_git_status_line)"
+        if (( $+functions[dotfiles] )); then
+            dotfiles --zsh-prompt
+        else
+            _git_stline
+        fi
+        _esc "${_ZD[prompt]}"
         _ZZ_PROMPT[gs]=$REPLY
         # One git indicator: select correct git glyph based on whether normal git folder or dotfile bare repo. 
         [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
@@ -257,6 +263,7 @@ _setup_prompt() {
     }
 
     _disp_type() {
+        local disp
         if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             disp="$1"
         else
@@ -299,28 +306,21 @@ _setup_prompt() {
         print -n -- "$result"
     }
 
-    # Git status - uses dotfiles if available, otherwise _git_stline
-    _git_status_line() {
-        if (($+functions[dotfiles])); then
-            echo "${_ZD[prompt]}"
-        else
-            _git_stline
-        fi
-    }
-
-    # Fallback git status line for standard git repos
+    # Fallback when dotfiles is not installed: sets _ZD[gitdir] and
+    # _ZD[prompt] ("branch +staged ~unstaged ?untracked") like dotfiles does.
     _git_stline() {
-        local p
-        if [[ -n $porcelain ]]; then
-            local -i s=0
-            s=$(echo "$porcelain" | grep -c "^[MTADRC]")
-            ((s)) && p+=" +$s" # staged
-            s=$(echo "$porcelain" | grep -c "^.[MTDRC]")
-            ((s)) && p+=" ~$s" # unstaged
-            s=$(echo "$porcelain" | grep -c "^??")
-            ((s)) && p+=" ?$s" # untracked
-        fi
-        echo "$p"
+        local -a lines
+        lines=("${(@f)$(git rev-parse --absolute-git-dir --abbrev-ref HEAD 2>/dev/null)}")
+        _ZD[gitdir]=${lines[1]}
+        _ZD[prompt]=${lines[2]}
+        _ZD[track]=0
+        [[ -z ${_ZD[prompt]} ]] && return
+
+        local -i s
+        lines=("${(@f)$(git status --porcelain 2>/dev/null)}")
+        s=${#${(M)lines:#[MTADRC]*}};  ((s)) && _ZD[prompt]+=" +$s" # staged
+        s=${#${(M)lines:#?[MTDRC]*}};  ((s)) && _ZD[prompt]+=" ~$s" # unstaged
+        s=${#${(M)lines:#\?\?*}};      ((s)) && _ZD[prompt]+=" ?$s" # untracked
     }
 
     _sec_vcs_iff() {
