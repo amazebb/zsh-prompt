@@ -54,6 +54,7 @@ resets the array):
 _ZZ_PROMPT[width]=60    # left prompt width
 _ZZ_PROMPT[nf]=off      # plain text instead of Nerd Font glyphs
 _ZZ_PROMPT[gv]=right    # git segment: left, right or off
+_ZZ_PROMPT[sv]=ip       # ssh segment: host (user@host), ip (user@server ip) or off
 _ZZ_PROMPT[b]='#5f00af' # PWD background
 ```
 
