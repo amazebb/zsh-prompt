@@ -144,11 +144,14 @@ _setup_prompt() {
 
     # Client OS/terminal, forwarded over ssh via SendEnv/AcceptEnv LANG LC_*
     # so _AT256 reflects the local Terminal.app, not the remote host.
-    [[ -z $SSH_TTY ]] && export LC_OS=$OSTYPE LC_TERM_PROGRAM=$TERM_PROGRAM
+    # Kernel name and version of the running OS (uname -sr), not $OSTYPE,
+    # which is the OS zsh was built on: e.g. "Darwin 24.6.0".
+    [[ -z $SSH_TTY ]] && export LC_OS="$(uname -sr)" LC_TERM_PROGRAM=$TERM_PROGRAM
 
+    # Terminal.app before macOS 26 (darwin 25). Pattern match, not arithmetic,
+    # since LC_OS may come from the ssh client.
     _AT256() {
-        [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS == darwin* ]] \
-            && (( ${LC_OS#darwin} < 25.0 ))
+        [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS == "Darwin "<0-24>(|.*) ]]
     }
 
     # Map '#rrggbb' colours to the nearest 256-colour index where there is no truecolor.
