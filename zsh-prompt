@@ -14,6 +14,7 @@ _ZZ_PROMPT=(
     [f]='#ffffff'    # (F) global foreground color
     [width]='40'     # Prompt width
     [nf]='on'        # Use Nerd Fonts 'on' (default) or 'off' (plain text)
+    [dn]='2'         # Repo/venv depth shown as '/' per level; deeper shows '-d<n>'
 
     ## PS1
     [b]='#0064e4'    # (K) PWD
@@ -46,7 +47,6 @@ _ZZ_PROMPT=(
     [py]='\ue606'   # Python glyph
     [cv]='#c7008b'  # (K) Outside project folder
     [vt]='icon'     # 'icon', 'text', 'icontext'
-    [vv]=''         # b or cv: not user config
 
     ### System
     [t]='%D{%H:%M}' # Date/Time
@@ -162,7 +162,7 @@ _setup_prompt() {
         _ZZ_PROMPT[gs]=$REPLY
         # One git indicator: select correct git glyph based on whether normal git folder or dotfile bare repo. 
         [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
-        [[ $(M gs) =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
+        [[ ${_ZZ_PROMPT[gs]} =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
     }
 
     _sec_user() {
@@ -213,35 +213,25 @@ _setup_prompt() {
         _ZZ_OUT="${_ZZ_OUT[1,_ZZ_PWD_AT]}$pre$mark$dir${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}"
     }
 
-    # Git: glyph + git folder + branch glyph + changes
-    _vcs() {
-        _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
-    }
+    # Venv segment, when [vo] matches the side $1 ('left' or 'right').
+    # Background [b] inside the project folder, [cv] outside it.
+    _sec_venv() {
+        [[ -z $VIRTUAL_ENV || ${_ZZ_PROMPT[vo]} != "$1" ]] && return
 
-    # Venv path 
-    _venv() {
-        _ZZ_OUT+="$_ZZ_VENV_TEXT"
-    }
-
-    typeset -g _ZZ_VENV_TEXT
-
-    _venv_pre() {
-        _ZZ_VENV_TEXT=
-        [[ -z $VIRTUAL_ENV || ${_ZZ_PROMPT[vo]} == "off" ]] && return
-       
-        local venv 
+        local venv bg mode=trail
+        [[ $1 == right ]] && mode=lead
         venv="${VIRTUAL_ENV%/*}"
         if [[ $PWD == "$venv"/* || $PWD == "$venv" ]]; then
-            _ZZ_PROMPT[vv]=b
-            venv=$(_venv_path "$venv")
-            venv="$venv${VIRTUAL_ENV##*/}"
+            bg=b
+            venv="$(_depth "$venv")${VIRTUAL_ENV##*/}"
         else
-            _ZZ_PROMPT[vv]=cv
+            bg=cv
             venv=${venv/#$PWD/}
             venv="${venv/#$HOME/~}"
         fi
+        P $bg $mode
         _esc "$venv"
-        _ZZ_VENV_TEXT="$(_disp_type "$REPLY" "$(M py)" "${_ZZ_PROMPT[vt]}")"
+        _ZZ_OUT+="$(_disp_type "$REPLY" "$(M py)" "${_ZZ_PROMPT[vt]}")"
     }
 
     _git_folder (){
@@ -249,7 +239,7 @@ _setup_prompt() {
        
         repo="${_ZD[gitdir]%/}"
         dir="${repo%/*}"
-        depth=$(_venv_path "$dir")
+        depth=$(_depth "$dir")
         _esc "$depth${repo##*/}"
 
         _disp_type "$REPLY" "$(M gg)" "${_ZZ_PROMPT[ga]}"
@@ -269,20 +259,12 @@ _setup_prompt() {
         print -nr -- "$disp "
     }
 
-    # Clock 
-    _sec_time() {
-        _ZZ_OUT+="$(M t)"
-    }
-
-    _venv_path() {
-        # Calculate relative path from $1 to given directory as "/"
-        # notation.
-        # Given a base path (Python venv or .git/), returns
-        # a string of "/" repeated for each directory level between
-        # the base and PWD. Depths beyond $2 (default 2) collapse to
+    _depth() {
+        # Depth of PWD below base path $1 (Python venv or .git/) as "/"
+        # repeated once per directory level. Depths beyond [dn] collapse to
         # the shorthand "-d<depth>".
         local relative result
-        local -i depth=0 depth_n=${2:-2}
+        local -i depth=0
 
         # Compare by inode (-ef): APFS is case-insensitive by default,
         # so $PWD may differ in case from the git/venv path (e.g. zoxide
@@ -290,7 +272,7 @@ _setup_prompt() {
         # keep $PWD's actual casing.
         [[ "${PWD:${#1}:1}" == / && "${PWD:0:${#1}}" -ef "$1" ]] && relative="${PWD:${#1}+1}"
         [[ -n "$relative" ]] && depth=$(( ${#${relative//[^\/]}} + 1 ))
-        if (( depth > depth_n )); then
+        if (( depth > ${_ZZ_PROMPT[dn]} )); then
             result="-d${depth} "
         else
             repeat $depth; result+="/"
@@ -320,36 +302,21 @@ _setup_prompt() {
         [[ -z ${_ZZ_PROMPT[gs]} ]] && return
         if [[ $1 == "left" && ${_ZZ_PROMPT[gv]} == "left" ]]; then
             P gc trail
-            _vcs
-        fi
-    }
-
-    _sec_venv_iff() {
-        [[ -z $VIRTUAL_ENV || ${_ZZ_PROMPT[vo]} == "off" ]] && return
-        if [[ $1 == "left" && ${_ZZ_PROMPT[vo]} == "left" ]]; then
-            P "${_ZZ_PROMPT[vv]}" trail
-            _venv
-        elif [[ $1 == "right" && ${_ZZ_PROMPT[vo]} == "right" ]]; then
-            P "${_ZZ_PROMPT[vv]}" lead
-            _venv
+            # Git: glyph + git folder + branch glyph + changes
+            _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
         fi
     }
 
     _last_exit_status() {
-        _ZZ_PROMPT[xs]=$? 
-        if (( _ZZ_PROMPT[xs] == 0 )); then
-            _ZZ_PROMPT[xs]="go"
-        else
-            _ZZ_PROMPT[xs]="x"
-        fi
- }
+        (( $? )) && _ZZ_PROMPT[xs]=x || _ZZ_PROMPT[xs]=go
+    }
 
     # Left: user + pwd, then git 
     _ps1() {
         P ps1 init
         _sec_user
         _ZZ_PWD_AT=${#_ZZ_OUT}
-        _sec_venv_iff left
+        _sec_venv left
         _sec_vcs_iff left
         _pwd_fit
         P ps1 close
@@ -358,9 +325,9 @@ _setup_prompt() {
     # Right: optional venv/repo (lead), then time + exit status.
     _rps1() {
         P rps1 init
-        _sec_venv_iff right
+        _sec_venv right
         P lead
-        _sec_time
+        _ZZ_OUT+="$(M t)"
         P rps1 close
     }
 
@@ -380,7 +347,7 @@ _setup_prompt() {
     # (-U keeps entries unique when the file is re-sourced).
     # Note: to time each section use _time_ps1 _time_rps1 in place of _ps1 _rps1
     typeset -gU precmd_functions
-    precmd_functions+=(_git_pre _venv_pre _last_exit_status _ps1 _rps1)
+    precmd_functions+=(_git_pre _last_exit_status _ps1 _rps1)
 }
 
 _chpwd_update() {
