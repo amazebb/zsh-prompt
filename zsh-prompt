@@ -58,20 +58,14 @@ _ZZ_PROMPT=(
 )
 
 _setup_prompt() {
-    # PROMPT_SUBST is not needed: every segment is built in precmd.
+    # PROMPT_SUBST must stay off: PS1 holds untrusted text (paths, branch),
+    # so a name like '$(cmd)' would run. Every segment is built in precmd.
     zmodload zsh/datetime
 
-    # Untrusted text (paths, branch, repo, venv) → literal PS1 text in $REPLY.
-    # Control chars become '?' (no terminal escape injection); '%' is doubled;
-    # if PROMPT_SUBST is on (e.g. set by another plugin), \ $ ` are escaped
-    # so a name like '$(cmd)' is shown, not run.
+    # Untrusted text → literal PS1 text in $REPLY. Control chars become '?'
+    # (no terminal escape injection); '%' is doubled.
     _esc() {
         REPLY=${${1//[[:cntrl:]]/?}//\%/%%}
-        if [[ -o promptsubst ]]; then
-            REPLY=${REPLY//\\/\\\\}
-            REPLY=${REPLY//\$/\\\$}
-            REPLY=${REPLY//\`/\\\`}
-        fi
     }
 
     M(){
@@ -178,19 +172,15 @@ _setup_prompt() {
         _ZZ_OUT+="$_u"
     }
 
-    # Marks where the path goes; _pwd_fit inserts it once the rest of
-    # PS1 is built, so it knows how much width the later segments take.
+    # Where the path goes in $_ZZ_OUT (set by _ps1); _pwd_fit inserts it once
+    # the rest of PS1 is built, so it knows how much width later segments take.
     typeset -gi _ZZ_PWD_AT
-
-    _sec_pwd() {
-        _ZZ_PWD_AT=${#_ZZ_OUT}
-    }
 
     # Fit prefix + path + later segments into [width]: shorten directories
     # left to right to one letter (two for dot dirs), keeping the last whole.
     # If that still doesn't fit, left-truncate the path only.
     _pwd_fit() {
-        local pre dir tail p mark
+        local pre dir tail mark
         local -a parts
         local -i i room
 
@@ -203,10 +193,8 @@ _setup_prompt() {
         fi
 
         # Visible width of what follows the path (strip %{…%} escapes,
-        # then undo _esc: %% → %, \x → x).
-        setopt localoptions extendedglob
+        # then undo _esc's %% → %).
         tail=${${(S)${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}//\%\{*\%\}}//\%\%/%}
-        [[ -o promptsubst ]] && tail=${tail//(#b)\\(?)/$match[1]}
         room=$(( $(M width) - ${(m)#pre} - ${(m)#tail} ))
 
         parts=("${(@s:/:)dir}")
@@ -216,11 +204,13 @@ _setup_prompt() {
         done
         (( i > 2 )) && mark=$(M pt)
 
-        (( ${(m)#dir} > room )) && p="%$(( room > 3 ? room : 3 ))<..<"
         _esc "$dir"
-        [[ -n $p ]] && dir="$p$REPLY%<<" || dir=$REPLY
-        p="$pre$mark$dir"
-        _ZZ_OUT="${_ZZ_OUT[1,_ZZ_PWD_AT]}$p${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}"
+        if (( ${(m)#dir} > room )); then
+            dir="%$(( room > 3 ? room : 3 ))<..<$REPLY%<<"
+        else
+            dir=$REPLY
+        fi
+        _ZZ_OUT="${_ZZ_OUT[1,_ZZ_PWD_AT]}$pre$mark$dir${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}"
     }
 
     # Git: glyph + git folder + branch glyph + changes
@@ -358,7 +348,7 @@ _setup_prompt() {
     _ps1() {
         P ps1 init
         _sec_user
-        _sec_pwd
+        _ZZ_PWD_AT=${#_ZZ_OUT}
         _sec_venv_iff left
         _sec_vcs_iff left
         _pwd_fit
