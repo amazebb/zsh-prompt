@@ -153,7 +153,7 @@ _setup_prompt() {
     _AT256 && zmodload zsh/nearcolor
 
     # Update Git status before each prompt
-    precmd() {
+    _git_pre() {
         dotfiles --zsh-prompt
         _esc "$(_git_status_line)"
         _ZZ_PROMPT[gs]=$REPLY
@@ -383,9 +383,11 @@ _setup_prompt() {
         printf "RPS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 ))
     }
 
-    # Final hook to update prompt
-    # Note: to timeeach section use (_time_ps1 _time_rps1)
-    precmd_functions=(_venv_pre _last_exit_status _ps1 _rps1)
+    # Hooks to update the prompt, added alongside other plugins' hooks
+    # (-U keeps entries unique when the file is re-sourced).
+    # Note: to time each section use _time_ps1 _time_rps1 in place of _ps1 _rps1
+    typeset -gU precmd_functions
+    precmd_functions+=(_git_pre _venv_pre _last_exit_status _ps1 _rps1)
 }
 
 _chpwd_update() {
