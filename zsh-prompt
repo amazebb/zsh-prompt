@@ -24,7 +24,7 @@ _ZZ_PROMPT=(
     [pt]='+'         # Leading marker when the path is shortened
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
     [sb]='#d75f00'   # (K) Ssh user@host
-    [sv]='host'      # Ssh segment: 'host' (user@host), 'ip' (user@server ip), 'off'
+    [sv]='host'      # Ssh segment: 'host' (user@host), 'ip' (user@server ip), 'off' (glyph only)
  
     ### Git
     [gt]='\ue65d'   # Git glyph
@@ -166,15 +166,17 @@ _setup_prompt() {
     }
 
     _sec_user() {
-        local host='%m'
-        if [[ ( -n "$SSH_CLIENT" || -n "$SSH_TTY" ) && ${_ZZ_PROMPT[sv]} != off ]]; then
+        local uh='%n@%m'
+        if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
             # SSH_CONNECTION: client ip, client port, server ip, server port
-            if [[ ${_ZZ_PROMPT[sv]} == ip && -n $SSH_CONNECTION ]]; then
+            if [[ ${_ZZ_PROMPT[sv]} == off ]]; then
+                uh=
+            elif [[ ${_ZZ_PROMPT[sv]} == ip && -n $SSH_CONNECTION ]]; then
                 _esc "${${=SSH_CONNECTION}[3]}"
-                host=$REPLY
+                uh="%n@$REPLY"
             fi
             P sb f
-            _ZZ_OUT+="$(M ssh)%n@$host"
+            _ZZ_OUT+="$(M ssh)$uh"
             P b trail
         else
             _ZZ_OUT+="$(M u)"
