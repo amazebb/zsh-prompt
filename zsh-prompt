@@ -25,6 +25,7 @@ _ZZ_PROMPT=(
     [u]=''           # user@host ("%n@%m")
     [h]='\U000f07d2' # HOME
     [p]='\uea83'     # Folder
+    [pt]='+'         # Leading marker when the path is shortened
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
  
     ### Git
@@ -167,7 +168,7 @@ _setup_prompt() {
     # left to right to one letter (two for dot dirs), keeping the last whole.
     # If that still doesn't fit, left-truncate the path only.
     _pwd_fit() {
-        local pre dir tail p
+        local pre dir tail p mark
         local -a parts
         local -i i room
 
@@ -188,10 +189,11 @@ _setup_prompt() {
             [[ ${parts[i]} == .* ]] && parts[i]=${parts[i][1,2]} || parts[i]=${parts[i][1]}
             dir=${(j:/:)parts}
         done
+        (( i > 2 )) && mark=$(M pt)
 
         dir=${dir//\%/%%}
         (( ${(m)#dir} > room )) && dir="%$(( room > 3 ? room : 3 ))<..<$dir%<<"
-        p="$pre$dir"
+        p="$pre$mark$dir"
         _ZZ_OUT="${_ZZ_OUT[1,_ZZ_PWD_AT]}$p${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}"
     }
 
