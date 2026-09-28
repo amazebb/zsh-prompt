@@ -23,6 +23,7 @@ _ZZ_PROMPT=(
     [p]='\uea83'     # Folder
     [pt]='+'         # Leading marker when the path is shortened
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
+    [sb]='#d75f00'   # (K) Ssh user@host
  
     ### Git
     [gt]='\ue65d'   # Git glyph
@@ -164,10 +165,13 @@ _setup_prompt() {
     }
 
     _sec_user() {
-        local _u
-        _u=$(M u)
-        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && _u="$(M ssh)%n@%m"
-        _ZZ_OUT+="$_u"
+        if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
+            P sb f
+            _ZZ_OUT+="$(M ssh)%n@%m"
+            P b trail
+        else
+            _ZZ_OUT+="$(M u)"
+        fi
     }
 
     # Where the path goes in $_ZZ_OUT (set by _ps1); _pwd_fit inserts it once
