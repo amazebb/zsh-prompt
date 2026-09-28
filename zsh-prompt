@@ -25,14 +25,11 @@ _ZZ_PROMPT=(
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
  
     ### Git
-    [gs]=''         # Status line message
     [gt]='\ue65d'   # Git glyph
     [gb]='\ue725'   # Branch glyph
     [gd]='\ue5fb'   # Git glyph (dotfiles folder)
-    [gg]=''         # computed: [gd] if track else [gt]
     [gx]='#d6000c'  # (K) Working tree changes
     [go]='#008400'  # (K) Working tree clean
-    [gc]=''         # Either [gx] or [go]: not user config
     [gv]='left'     # Repo segment placement: 'left', 'right', 'off'
     [ga]='icon'     # 'icon', 'text', 'icontext'
     
@@ -45,10 +42,17 @@ _ZZ_PROMPT=(
     ### System
     [t]='%D{%H:%M}' # Date/Time
     [x]='#d6000c'   # (K) Last command error
+)
 
-    ### Runtime (set by P; not user config)
-    [k]=''          # Current segment background
-    [xs]=0          # Color to use based on exit status: go or x 
+# Runtime state, set each prompt (not user config). Colour/glyph values are
+# _ZZ_PROMPT key names, read through M/F/K.
+typeset -gA _ZZ_STATE
+_ZZ_STATE=(
+    [gs]=''         # Git status line (from _ZD[prompt])
+    [gg]=gt         # Git glyph key: gd (dotfiles folder) or gt
+    [gc]=go         # Git background key: gx (changes) or go (clean)
+    [k]=''          # Current segment background key (set by P)
+    [xs]=go         # Exit status background key: go or x
 )
 
 _setup_prompt() {
@@ -66,7 +70,7 @@ _setup_prompt() {
         # Suppress Nerd Font glyph keys when [nf]=off
         if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
             case $1 in
-                p1|h|p|gt|gb|gd|gg|r1|py) return ;;
+                p1|h|p|gt|gb|gd|r1|py) return ;;
                 ssh) print -n -- "ssh"; return ;;
             esac
         fi
@@ -84,7 +88,7 @@ _setup_prompt() {
     }
 
     # Segment painter, must run in the parent shell (not $(P …))
-    # so that [k] is updated for the next segment. Appends to $_ZZ_OUT
+    # so that _ZZ_STATE[k] is updated for the next segment. Appends to $_ZZ_OUT
     # (reset by _ps1 / _rps1 before building).
     #
     #   P <bg> <fg_key>   open/continue: K(bg) F(fg); [k]=bg
@@ -96,19 +100,19 @@ _setup_prompt() {
         local bg=$1 mode=$2
         case ${mode:-lead} in
             trail)
-                _ZZ_OUT+="$(K "$bg"; F "${_ZZ_PROMPT[k]}"; M p1; F f)"
+                _ZZ_OUT+="$(K "$bg"; F "${_ZZ_STATE[k]}"; M p1; F f)"
                 ;;
             lead)
-                (( $# == 1 )) && bg="${_ZZ_PROMPT[xs]}"
+                (( $# == 1 )) && bg="${_ZZ_STATE[xs]}"
                 _ZZ_OUT+="$(F "$bg"; M r1; F f; K "$bg")"
                 ;;
             init)
                 _ZZ_OUT=$(R)
-                _ZZ_PROMPT[k]=
+                _ZZ_STATE[k]=
                 [[ $1 == "ps1" ]] && P b f && bg="b"
                 ;;
             close)
-                [[ $1 == "ps1" ]] && PS1="$_ZZ_OUT$(R; F "${_ZZ_PROMPT[k]}"; M p1)%f " || RPS1=$_ZZ_OUT
+                [[ $1 == "ps1" ]] && PS1="$_ZZ_OUT$(R; F "${_ZZ_STATE[k]}"; M p1)%f " || RPS1=$_ZZ_OUT
                 bg=
                 ;;
             *)
@@ -116,7 +120,7 @@ _setup_prompt() {
                 _ZZ_OUT+="$(K "$bg"; F "$mode")"
                 ;;
         esac
-        _ZZ_PROMPT[k]="$bg"
+        _ZZ_STATE[k]="$bg"
     }
 
     R() {
@@ -153,10 +157,10 @@ _setup_prompt() {
             _git_stline
         fi
         _esc "${_ZD[prompt]}"
-        _ZZ_PROMPT[gs]=$REPLY
+        _ZZ_STATE[gs]=$REPLY
         # One git indicator: select correct git glyph based on whether normal git folder or dotfile bare repo. 
-        [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gd]} || _ZZ_PROMPT[gg]=${_ZZ_PROMPT[gt]}
-        [[ ${_ZZ_PROMPT[gs]} =~ [+~?] ]] && _ZZ_PROMPT[gc]=$(M gx) || _ZZ_PROMPT[gc]=$(M go)
+        [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_STATE[gg]=gd || _ZZ_STATE[gg]=gt
+        [[ ${_ZZ_STATE[gs]} =~ [+~?] ]] && _ZZ_STATE[gc]=gx || _ZZ_STATE[gc]=go
     }
 
     _sec_user() {
@@ -236,7 +240,7 @@ _setup_prompt() {
         depth=$(_depth "$dir")
         _esc "$depth${repo##*/}"
 
-        _disp_type "$REPLY" "$(M gg)" "${_ZZ_PROMPT[ga]}"
+        _disp_type "$REPLY" "$(M "${_ZZ_STATE[gg]}")" "${_ZZ_PROMPT[ga]}"
     }
 
     _disp_type() {
@@ -293,16 +297,16 @@ _setup_prompt() {
     }
 
     _sec_vcs_iff() {
-        [[ -z ${_ZZ_PROMPT[gs]} ]] && return
+        [[ -z ${_ZZ_STATE[gs]} ]] && return
         if [[ $1 == "left" && ${_ZZ_PROMPT[gv]} == "left" ]]; then
-            P gc trail
+            P "${_ZZ_STATE[gc]}" trail
             # Git: glyph + git folder + branch glyph + changes
-            _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_PROMPT[gs]}"
+            _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_STATE[gs]}"
         fi
     }
 
     _last_exit_status() {
-        (( $? )) && _ZZ_PROMPT[xs]=x || _ZZ_PROMPT[xs]=go
+        (( $? )) && _ZZ_STATE[xs]=x || _ZZ_STATE[xs]=go
     }
 
     # Left: user + pwd, then git 

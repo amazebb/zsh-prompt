@@ -48,12 +48,11 @@ An example of what the Zsh prompt looks like in action
 
 The entire implementation lives in `zsh-prompt` (a shell script, not a Zsh plugin framework). Key structure:
 
-- **`_ZZ_PROMPT` associative array** (top of file): All configuration — colors, glyphs, widths. Keys use short mnemonics (`[b]` = PWD background, `[gx]`/`[go]` = git dirty/clean colors, `[gc]` = computed git color, `[f]` = computed text color for dark/light mode).
-- **Helper functions**: `M()` reads config (with optional Kitty glyph scaling via `\e]66;...`), `F()`/`K()`/`R()` handle Zsh color escapes. `R()` includes a Terminal.app workaround for color brightening.
-- **Prompt segments**: `_ps1a` (left: path), `_ps1b` (left: git status with powerline glyphs), `_rps1a` (right: venv or git repo path), `_rps1b` (right: time + exit status).
-- **`precmd()`**: Runs before each prompt — calls `dotfiles --zsh-prompt` to populate `_ZD[prompt]` with git info, detects macOS dark mode via `defaults read -g AppleInterfaceStyle`, computes `[gc]` and `[gs]`.
-- **`precmd_functions`**: Hooks `_ps1` and `_rps1` to rebuild PS1/RPS1 each prompt.
-- **`_chpwd_update`**: Updates terminal title on directory change.
+- **`_ZZ_PROMPT` associative array** (top of file): user configuration — colors, glyphs, widths. Keys use short mnemonics (`[b]` = PWD background, `[gx]`/`[go]` = git dirty/clean colors, `[f]` = text color, `[width]` = left prompt width, `[dn]` = repo/venv depth limit).
+- **`_ZZ_STATE` associative array**: runtime state set each prompt — `[gs]` git status line, and `_ZZ_PROMPT` key names for `[gg]` git glyph, `[gc]` git background, `[k]` current segment background, `[xs]` exit-status background.
+- **Helper functions**: `M()` reads config, `F()`/`K()`/`R()` handle Zsh color escapes. `R()` includes a Terminal.app workaround for color brightening. `_esc()` makes untrusted text (paths, branch, repo, venv) literal in PS1.
+- **Prompt segments**: `_ps1` (left: user, path via `_pwd_fit`, venv, git) and `_rps1` (right: optional venv, time + exit status).
+- **Hooks**: `_git_pre _last_exit_status _ps1 _rps1` are appended to `precmd_functions`, and `_chpwd_update` (terminal title) to `chpwd_functions`, with `typeset -gaU` so re-sourcing doesn't duplicate them. `_git_pre` calls `dotfiles --zsh-prompt`, or the `_git_stline` fallback.
 
 ## External Dependencies
 
