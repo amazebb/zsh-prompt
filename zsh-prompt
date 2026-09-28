@@ -296,13 +296,15 @@ _setup_prompt() {
         s=${#${(M)lines:#\?\?*}};      ((s)) && _ZD[prompt]+=" ?$s" # untracked
     }
 
-    _sec_vcs_iff() {
-        [[ -z ${_ZZ_STATE[gs]} ]] && return
-        if [[ $1 == "left" && ${_ZZ_PROMPT[gv]} == "left" ]]; then
-            P "${_ZZ_STATE[gc]}" trail
-            # Git: glyph + git folder + branch glyph + changes
-            _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_STATE[gs]}"
-        fi
+    # Git segment, when [gv] matches the side $1 ('left' or 'right'):
+    # glyph + git folder + branch glyph + changes
+    _sec_vcs() {
+        [[ -z ${_ZZ_STATE[gs]} || ${_ZZ_PROMPT[gv]} != "$1" ]] && return
+
+        local mode=trail end=
+        [[ $1 == right ]] && mode=lead end=' '
+        P "${_ZZ_STATE[gc]}" $mode
+        _ZZ_OUT+=" $(_git_folder; M gb)  ${_ZZ_STATE[gs]}$end"
     }
 
     _last_exit_status() {
@@ -315,7 +317,7 @@ _setup_prompt() {
         _sec_user
         _ZZ_PWD_AT=${#_ZZ_OUT}
         _sec_venv left
-        _sec_vcs_iff left
+        _sec_vcs left
         _pwd_fit
         P ps1 close
     }
@@ -324,6 +326,7 @@ _setup_prompt() {
     _rps1() {
         P rps1 init
         _sec_venv right
+        _sec_vcs right
         P lead
         _ZZ_OUT+="$(M t)"
         P rps1 close
