@@ -155,28 +155,44 @@ _setup_prompt() {
         _ZZ_OUT+="$_u"
     }
 
+    # Marks where the path goes; _pwd_fit inserts it once the rest of
+    # PS1 is built, so it knows how much width the later segments take.
+    typeset -gi _ZZ_PWD_AT
+
     _sec_pwd() {
-        local p
-        if [[ ${_ZZ_PROMPT[nf]} == off ]]; then
-            # Plain text: put ~ in the left-truncation marker so it survives
-            # %width<…< truncation (same idea as the home glyph in Nerd Font mode).
-            if [[ $PWD = "$HOME" ]]; then
-                p="<..<~"
-            elif [[ $PWD == $HOME/* ]]; then
-                p="<~..<~${PWD#"$HOME"}"
-            else
-                p="<..<$PWD"
-            fi
+        _ZZ_PWD_AT=${#_ZZ_OUT}
+    }
+
+    # Fit prefix + path + later segments into [width]: shorten directories
+    # left to right to one letter (two for dot dirs), keeping the last whole.
+    # If that still doesn't fit, left-truncate the path only.
+    _pwd_fit() {
+        local pre dir tail p
+        local -a parts
+        local -i i room
+
+        if [[ $PWD == "$HOME" || $PWD == $HOME/* ]]; then
+            dir=${PWD#"$HOME"}
+            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre="~" || pre=" $(M h) "
         else
-            if [[ $PWD = "$HOME" ]]; then
-                p="<..< $(M h) "
-            elif [[ $PWD == $HOME/* ]]; then
-                p="< $(M h) ..< $(M h) ${PWD#"$HOME"}"
-            else
-                p="< $(M p)  ..< $(M p) $PWD"
-            fi
+            dir=$PWD
+            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre= || pre=" $(M p) "
         fi
-        _ZZ_OUT+="%$(M width)$p"
+
+        # Visible width of what follows the path (strip %{…%} escapes).
+        tail=${(S)${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}//\%\{*\%\}}
+        room=$(( $(M width) - ${(m)#pre} - ${(m)#tail} ))
+
+        parts=("${(@s:/:)dir}")
+        for (( i = 2; i < $#parts && ${(m)#dir} > room; i++ )); do
+            [[ ${parts[i]} == .* ]] && parts[i]=${parts[i][1,2]} || parts[i]=${parts[i][1]}
+            dir=${(j:/:)parts}
+        done
+
+        dir=${dir//\%/%%}
+        (( ${(m)#dir} > room )) && dir="%$(( room > 3 ? room : 3 ))<..<$dir%<<"
+        p="$pre$dir"
+        _ZZ_OUT="${_ZZ_OUT[1,_ZZ_PWD_AT]}$p${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}"
     }
 
     # Git: glyph + git folder + branch glyph + changes
@@ -322,6 +338,7 @@ _setup_prompt() {
         _sec_pwd
         _sec_venv_iff left
         _sec_vcs_iff left
+        _pwd_fit
         P ps1 close
     }
 
