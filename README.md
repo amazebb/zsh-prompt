@@ -44,6 +44,19 @@ An example of what the Zsh prompt looks like in action
 | --- | --- |
 | ![git status modified dark](img/zsh-prompt-dark.png) | ![git status modified light](img/zsh-prompt-light.png) |
 
+## Configuration
+
+All options are in the commented `_ZZ_PROMPT` array at the top of
+`zsh-prompt`. Override them in `.zshrc` after the `source` line (sourcing
+resets the array):
+
+```zsh
+_ZZ_PROMPT[width]=60    # left prompt width
+_ZZ_PROMPT[nf]=off      # plain text instead of Nerd Font glyphs
+_ZZ_PROMPT[gv]=right    # git segment: left, right or off
+_ZZ_PROMPT[b]='#5f00af' # PWD background
+```
+
 ## Architecture
 
 The entire implementation lives in `zsh-prompt` (a shell script, not a Zsh plugin framework). Key structure:
