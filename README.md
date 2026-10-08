@@ -72,12 +72,12 @@ The entire implementation lives in `zsh-prompt` (a shell script, not a Zsh plugi
 
 Single dependency [dotfiles](https://github.com/amazebb/dotfiles.git)
 
-- `dotfiles --zsh-prompt`: Populates `_ZD[prompt]` (git status) and `_ZD[gitdir]` (repo path). If unavailable, falls back to `git_stline()` which parses `$porcelain` (expected to be git porcelain output).
+- `dotfiles --zsh-prompt`: Populates `_ZD[prompt]` (git status) and `_ZD[gitdir]` (repo path). If unavailable, `_git_stline` sets the same keys by running `git rev-parse` and `git status --porcelain` itself.
 - `_ZD` associative array: Set externally by the `dotfiles` command; keys used are `[prompt]`, `[gitdir]`, `[track]`.
 
 ## Key Conventions
 
-- Powerline glyphs (`\ue0b0`, `\ue0b2`) for segment separators; Nerd Font glyphs for icons.
-- Kitty-specific glyph scaling uses the `\e]66;...` escape sequence (triggered when `$KITTY_WINDOW_ID` is set).
-- Path display truncates using Zsh `%width<..< ` truncation from the left.
+- Powerline glyphs (`[p1]` `\ue0b4`, `[r1]` `\ue0b6`) for segment separators; Nerd Font glyphs for icons.
+- Path display: `_pwd_fit` shortens directories left to right to one letter (two for dot dirs) until path + later segments fit `[width]`, prefixing it with `[pt]` (`+`); only if that fails does it left-truncate the path with `%N<..<\u2026%<<`.
 - Performance timing functions (`_time_ps1`, `_time_rps1`) exist for profiling; swap them into `precmd_functions` to measure.
+- There is no build system, test suite or linter; test changes by sourcing the file in a Zsh session.
