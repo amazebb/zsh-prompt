@@ -79,5 +79,4 @@ Single dependency [dotfiles](https://github.com/amazebb/dotfiles.git)
 
 - Powerline glyphs (`[p1]` `\ue0b4`, `[r1]` `\ue0b6`) for segment separators; Nerd Font glyphs for icons.
 - Path display: `_pwd_fit` shortens directories left to right to one letter (two for dot dirs) until path + later segments fit `[width]`, prefixing it with `[pt]` (`+`); only if that fails does it left-truncate the path with `%N<..<\u2026%<<`.
-- Performance timing functions (`_time_ps1`, `_time_rps1`) exist for profiling; swap them into `precmd_functions` to measure.
-- There is no build system, test suite or linter; test changes by sourcing the file in a Zsh session.
+- There is no build system or linter. `zsh -f test.zsh` runs the regression tests (CI runs them on Linux and macOS); otherwise test changes by sourcing the file in a Zsh session.

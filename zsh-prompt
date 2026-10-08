@@ -64,8 +64,11 @@ _setup_prompt() {
 
     # Untrusted text → literal PS1 text in $REPLY. Control chars become '?'
     # (no terminal escape injection); '%' is doubled.
+    # With PROMPT_SUBST on, '$', '`' and '\' are backslash-escaped too.
     _esc() {
+        setopt localoptions extendedglob
         REPLY=${${1//[[:cntrl:]]/?}//\%/%%}
+        [[ -o prompt_subst ]] && REPLY=${REPLY//(#m)[\\\$\`]/\\$MATCH}
     }
 
     M(){
@@ -163,7 +166,7 @@ _setup_prompt() {
         _ZZ_STATE[gs]=$REPLY
         # One git indicator: select correct git glyph based on whether normal git folder or dotfile bare repo. 
         [[ ${_ZD[track]} == "1" && $(M ga) == icon ]] && _ZZ_STATE[gg]=gd || _ZZ_STATE[gg]=gt
-        [[ ${_ZZ_STATE[gs]} =~ [+~?] ]] && _ZZ_STATE[gc]=gx || _ZZ_STATE[gc]=go
+        [[ ${_ZZ_STATE[gs]} == *\ [+~?]* ]] &&_ZZ_STATE[gc]=gx || _ZZ_STATE[gc]=go
     }
 
     _sec_user() {
@@ -299,12 +302,15 @@ _setup_prompt() {
         local -a lines
         lines=("${(@f)$(git rev-parse --absolute-git-dir --abbrev-ref HEAD 2>/dev/null)}")
         _ZD[gitdir]=${lines[1]}
+        # An unborn branch reports HEAD; ask for its name (detached stays HEAD).
+        [[ ${lines[2]} == HEAD ]] && lines[2]=$(git symbolic-ref -q --short HEAD || print HEAD)
         _ZD[prompt]=${lines[2]}
         _ZD[track]=0
         [[ -z ${_ZD[prompt]} ]] && return
 
         local -i s
-        lines=("${(@f)$(git status --porcelain 2>/dev/null)}")
+        # fsmonitor off: a repo's own config must not run commands on cd.
+        lines=("${(@f)$(git -c core.fsmonitor=false status --porcelain 2>/dev/null)}")
         s=${#${(M)lines:#[MTADRC]*}};  ((s)) && _ZD[prompt]+=" +$s" # staged
         s=${#${(M)lines:#?[MTDRC]*}};  ((s)) && _ZD[prompt]+=" ~$s" # unstaged
         s=${#${(M)lines:#\?\?*}};      ((s)) && _ZD[prompt]+=" ?$s" # untracked
@@ -346,21 +352,8 @@ _setup_prompt() {
         P rps1 close
     }
 
-    _time_ps1() {
-        local start=$EPOCHREALTIME
-        _ps1
-        printf "PS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 )) 
-    }
-
-    _time_rps1() {
-        local start=$EPOCHREALTIME 
-        _rps1
-        printf "RPS1: %.3f ms\n" $(( (EPOCHREALTIME - start) * 1000 ))
-    }
-
     # Hooks to update the prompt, added alongside other plugins' hooks
     # (-U keeps entries unique when the file is re-sourced).
-    # Note: to time each section use _time_ps1 _time_rps1 in place of _ps1 _rps1
     typeset -gaU precmd_functions
     precmd_functions+=(_git_pre _last_exit_status _ps1 _rps1)
 
