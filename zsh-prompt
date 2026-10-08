@@ -142,10 +142,11 @@ _setup_prompt() {
     # which is the OS zsh was built on: e.g. "Darwin 24.6.0".
     [[ -z $SSH_TTY ]] && export LC_OS="$(uname -sr)" LC_TERM_PROGRAM=$TERM_PROGRAM
 
-    # Terminal.app before macOS 26 (darwin 25). Pattern match, not arithmetic,
+    # Terminal.app before macOS 26 (darwin 25). Regex, not arithmetic,
     # since LC_OS may come from the ssh client.
     _AT256() {
-        [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS == "Darwin "<0-24>(|.*) ]]
+        local re='^Darwin ([0-9]|1[0-9]|2[0-4])(\.|$)'
+        [[ $LC_TERM_PROGRAM == Apple_Terminal && $LC_OS =~ $re ]]
     }
 
     # Map '#rrggbb' colours to the nearest 256-colour index where there is no truecolor.
