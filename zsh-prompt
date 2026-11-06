@@ -23,7 +23,7 @@ _ZZ_PROMPT=(
     [p]='\uea83'     # Folder
     [pt]='+'         # Leading marker when the path is shortened
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
-    [sb]='#d75f00'   # (K) Ssh user@host
+    [sb]='#6f42c1'   # (K) Ssh user@host
     [sv]='host'      # Ssh segment: 'host' (user@host), 'ip' (user@server ip), 'off' (glyph only)
  
     ### Git
