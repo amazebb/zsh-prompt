@@ -207,6 +207,9 @@ _setup_prompt() {
             [[ ${_ZZ_PROMPT[nf]} == off ]] && pre= || pre="$(M p) "
         fi
 
+        # Keep the path off the ssh segment's edge
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && pre=" $pre"
+
         # Visible width of what follows the path (strip %{…%} escapes,
         # then undo _esc's %% → %).
         tail=${${(S)${_ZZ_OUT[_ZZ_PWD_AT+1,-1]}//\%\{*\%\}}//\%\%/%}
