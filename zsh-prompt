@@ -201,10 +201,10 @@ _setup_prompt() {
 
         if [[ $PWD == "$HOME" || $PWD == $HOME/* ]]; then
             dir=${PWD#"$HOME"}
-            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre="~" || pre=" $(M h) "
+            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre="~" || pre="$(M h) "
         else
             dir=$PWD
-            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre= || pre=" $(M p) "
+            [[ ${_ZZ_PROMPT[nf]} == off ]] && pre= || pre="$(M p) "
         fi
 
         # Visible width of what follows the path (strip %{…%} escapes,
