@@ -6,6 +6,10 @@ This is a Zsh prompt customization script that provides a styled prompt with Git
 status integration, Python virtual environment display, and command exit status
 indicators.
 
+In a shell launched from [nnn](https://github.com/jarun/nnn) (`!` or Ctrl+]) a
+segment before the path shows `nnn`, or `nnn:2` when nested, taken from the
+`NNNLVL` variable nnn exports.
+
 ## Install
 
 ```zsh
@@ -55,6 +59,7 @@ _ZZ_PROMPT[width]=60    # left prompt width
 _ZZ_PROMPT[nf]=off      # plain text instead of Nerd Font glyphs
 _ZZ_PROMPT[gv]=right    # git segment: left, right or off
 _ZZ_PROMPT[sv]=ip       # ssh segment: host (user@host), ip (user@server ip) or off (glyph only)
+_ZZ_PROMPT[nv]=off      # nnn segment: on (default) or off
 _ZZ_PROMPT[b]='#5f00af' # PWD background
 ```
 

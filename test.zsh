@@ -58,4 +58,19 @@ git checkout -q --detach
 _git_pre
 ok "detached HEAD" $_ZD[prompt] HEAD
 
+# nnn segment: shown only in a shell launched from nnn (NNNLVL set)
+cd $tmp
+unset SSH_CLIENT SSH_TTY
+NNNLVL= _ps1
+ok "no nnn segment without NNNLVL" "${PS1[(I)nnn]}" 0
+NNNLVL=1 _ps1
+ok "nnn segment at level 1" $(( ${PS1[(I)nnn]} > 0 )) 1
+ok "no level shown at level 1" "${PS1[(I)nnn:]}" 0
+NNNLVL=2 _ps1
+ok "nested nnn shows the level" $(( ${PS1[(I)nnn:2]} > 0 )) 1
+_ZZ_PROMPT[nv]=off
+NNNLVL=1 _ps1
+ok "nnn segment off" "${PS1[(I)nnn]}" 0
+_ZZ_PROMPT[nv]=on
+
 exit $(( fails > 0 ))

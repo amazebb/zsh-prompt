@@ -25,6 +25,9 @@ _ZZ_PROMPT=(
     [ssh]='\ue8b1 \U000f08c0 '   # Ssh
     [sb]='#6f42c1'   # (K) Ssh user@host
     [sv]='host'      # Ssh segment: 'host' (user@host), 'ip' (user@server ip), 'off' (glyph only)
+    [nv]='on'        # Nnn segment (shell launched from nnn, NNNLVL set): 'on' or 'off'
+    [nl]='nnn'       # Nnn segment label; nested levels show 'label:level'
+    [nb]='#b85c00'   # (K) Nnn segment
  
     ### Git
     [gt]='\ue65d'   # Git glyph
@@ -55,6 +58,7 @@ _ZZ_STATE=(
     [gc]=go         # Git background key: gx (changes) or go (clean)
     [k]=''          # Current segment background key (set by P)
     [xs]=go         # Exit status background key: go or x
+    [nn]=''         # Nnn segment text (empty when not shown)
 )
 
 _setup_prompt() {
@@ -170,7 +174,15 @@ _setup_prompt() {
     }
 
     _sec_user() {
-        local uh='%n@%m'
+        local uh='%n@%m' nn=
+        # Shell launched from nnn: it exports NNNLVL (1 = first level, 2 = nnn inside it)
+        if [[ ${_ZZ_PROMPT[nv]} != off && $NNNLVL == <1-> ]]; then
+            nn=$(M nl)
+            (( NNNLVL > 1 )) && nn+=":$NNNLVL"
+            _esc "$nn"
+            nn=" $REPLY "
+        fi
+        _ZZ_STATE[nn]=$nn
         if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]]; then
             # SSH_CONNECTION: client ip, client port, server ip, server port
             if [[ ${_ZZ_PROMPT[sv]} == off ]]; then
@@ -181,6 +193,19 @@ _setup_prompt() {
             fi
             P sb f
             _ZZ_OUT+="$(M ssh)$uh"
+            if [[ -n $nn ]]; then
+                P nb trail
+                _ZZ_OUT+=$nn
+            fi
+            P b trail
+        elif [[ -n $nn ]]; then
+            if [[ -n "$(M u)" ]]; then
+                _ZZ_OUT+="$(M u)"
+                P nb trail
+            else
+                P nb f
+            fi
+            _ZZ_OUT+=$nn
             P b trail
         else
             _ZZ_OUT+="$(M u)"
@@ -207,8 +232,8 @@ _setup_prompt() {
             [[ ${_ZZ_PROMPT[nf]} == off ]] && pre= || pre="$(M p) "
         fi
 
-        # Keep the path off the ssh segment's edge
-        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" ]] && pre=" $pre"
+        # Keep the path off the ssh or nnn segment's edge
+        [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n ${_ZZ_STATE[nn]} ]] && pre=" $pre"
 
         # Visible width of what follows the path (strip %{…%} escapes,
         # then undo _esc's %% → %).
